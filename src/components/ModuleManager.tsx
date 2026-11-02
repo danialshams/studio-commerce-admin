@@ -1,4 +1,5 @@
 "use client";
+import {adminFetch} from "@/lib/demo-api";
 import {useCallback,useEffect,useState,type FormEvent} from "react";
 import {Icon} from "@/components/Icon";
 import {LABELS,MONEY_FIELDS,modules,type Field} from "@/lib/config";
@@ -71,11 +72,11 @@ function Editor({section,item,onClose,onSuccess,categories}:{section:string;item
  useEffect(()=>{function key(e:KeyboardEvent){if(e.key==="Escape")onClose();}window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key)},[onClose]);
  async function save(e:FormEvent){e.preventDefault();setSaving(true);setError("");
   try{const body=section==="orders"||section==="reviews"||section==="leads"?payload(fields,values):payload(fields,values);
-   const resp=await fetch("/api/admin/"+section+(item?"/"+item.id:""),{method:item?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+   const resp=await adminFetch("/api/admin/"+section+(item?"/"+item.id:""),{method:item?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
    const data=await resp.json();if(!resp.ok)throw Error(data.error||"ثبت ناموفق بود");onSuccess();}
   catch(e){setError(e instanceof Error?e.message:"خطایی رخ داد");}finally{setSaving(false);}}
  async function uploadImage(file:File,field:string){setUploading(field);setError("");
-  try{const form=new FormData();form.append("file",file);const resp=await fetch("/api/admin/upload",{method:"POST",body:form});const result=await resp.json();
+  try{const form=new FormData();form.append("file",file);const resp=await adminFetch("/api/admin/upload",{method:"POST",body:form});const result=await resp.json();
    if(!resp.ok)throw Error(result.error||"آپلود ناموفق بود");setValues(v=>({...v,[field]:field==="gallery"?(String(v.gallery||"")+(v.gallery?"\n":"")+result.url):result.url}));}
   catch(e){setError(e instanceof Error?e.message:"خطای آپلود");}finally{setUploading(null)}}
  function change(key:string,val:unknown){setValues(prev=>{const next={...prev,[key]:val};if(key==="name"||key==="title"){const hasSlug=fields.some(x=>x.key==="slug");
@@ -105,14 +106,14 @@ export function ModuleManager({section}:{section:string}){
  const [data,setData]=useState<ListResponse|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [search,setSearch]=useState(""),[term,setTerm]=useState(""),[page,setPage]=useState(1),[editing,setEditing]=useState<RecordItem|null|"create">(null);
  const [deleting,setDeleting]=useState<RecordItem|null>(null),[busyDelete,setBusyDelete]=useState(false),[categories,setCategories]=useState<RecordItem[]>([]);
- const load=useCallback(async()=>{setLoading(true);setError("");try{const resp=await fetch(`/api/admin/${section}?page=${page}&limit=15&q=${encodeURIComponent(term)}`);
+ const load=useCallback(async()=>{setLoading(true);setError("");try{const resp=await adminFetch(`/api/admin/${section}?page=${page}&limit=15&q=${encodeURIComponent(term)}`);
     const body=await resp.json();if(!resp.ok)throw Error(body.error||"خطای بارگذاری");setData(body);}
     catch(e){setError(e instanceof Error?e.message:"خطا در دریافت اطلاعات");}finally{setLoading(false)}},[section,page,term]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const t=setTimeout(()=>{setPage(1);setTerm(search)},300);return()=>clearTimeout(t)},[search]);
- useEffect(()=>{if(section==="products")fetch("/api/admin/categories?limit=250").then(r=>r.json()).then(d=>setCategories(d.items||[])).catch(()=>{})},[section]);
+ useEffect(()=>{if(section==="products")adminFetch("/api/admin/categories?limit=250").then(r=>r.json()).then(d=>setCategories(d.items||[])).catch(()=>{})},[section]);
  useEffect(()=>{if(notice){const t=setTimeout(()=>setNotice(""),4500);return()=>clearTimeout(t)}},[notice]);
- async function remove(){if(!deleting)return;setBusyDelete(true);setError("");try{const res=await fetch(`/api/admin/${section}/${deleting.id}`,{method:"DELETE"});const body=await res.json();if(!res.ok)throw Error(body.error||"حذف ناموفق بود");
+ async function remove(){if(!deleting)return;setBusyDelete(true);setError("");try{const res=await adminFetch(`/api/admin/${section}/${deleting.id}`,{method:"DELETE"});const body=await res.json();if(!res.ok)throw Error(body.error||"حذف ناموفق بود");
    setDeleting(null);setNotice(section==="products"?"محصول آرشیو شد":"رکورد حذف شد");void load();}
   catch(e){setError(e instanceof Error?e.message:"خطا");}finally{setBusyDelete(false);}}
  const columns=mod.columns;
