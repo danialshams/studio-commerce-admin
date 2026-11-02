@@ -1,14 +1,15 @@
 "use client";
+import {adminFetch} from "@/lib/demo-api";
 import {useEffect,useState,type FormEvent} from "react";
 import {Icon} from "@/components/Icon";
 type Section={id:string;title:string;description:string;imageUrl?:string|null;enabled:boolean;position:number};
 type Settings={siteType:"STORE"|"CORPORATE";themeId:"design-1"|"design-2"|"design-3"|"custom";storeName:string;description:string;logoUrl?:string|null;contactEmail?:string|null;contactPhone?:string|null;address?:string|null;instagram?:string|null;orderNoticeEmail?:string|null;seoTitle?:string|null;seoDescription?:string|null;homeSections:Section[]};
 export function SettingsPage(){
  const [data,setData]=useState<Settings|null>(null),[saving,setSaving]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState(false);
- useEffect(()=>{fetch("/api/admin/settings").then(r=>r.json()).then(r=>setData(r.settings||null)).catch(()=>setError("تنظیمات بارگذاری نشد"))},[]);
+ useEffect(()=>{adminFetch("/api/admin/settings").then(r=>r.json()).then(r=>setData(r.settings||null)).catch(()=>setError("تنظیمات بارگذاری نشد"))},[]);
  function set<K extends keyof Settings>(key:K,value:Settings[K]){setData(d=>d?({...d,[key]:value}):d);setSuccess(false)}
  async function save(e:FormEvent){e.preventDefault();if(!data)return;setSaving(true);setError("");setSuccess(false);
-  try{const resp=await fetch("/api/admin/settings",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  try{const resp=await adminFetch("/api/admin/settings",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
     const result=await resp.json();if(!resp.ok)throw Error(result.error||"ذخیره ناموفق بود");setData(result.settings);setSuccess(true);window.dispatchEvent(new Event("studio-settings-changed"));}
   catch(e){setError(e instanceof Error?e.message:"خطا");}finally{setSaving(false)} }
  function editSection(index:number,field:keyof Section,value:unknown){if(!data)return;const arr=[...data.homeSections];arr[index]={...arr[index],[field]:value};set("homeSections",arr)}
