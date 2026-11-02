@@ -1,11 +1,12 @@
 "use client";
+import {adminFetch} from "@/lib/demo-api";
 import Link from "next/link";
 import {useEffect,useState} from "react";
 import {Icon} from "@/components/Icon";
 import {formatMoney,formatValue} from "@/lib/ui";
 type Summary={siteType:"STORE"|"CORPORATE";storeName:string;stats:{label:string;value:number;money?:boolean}[];recent:Record<string,unknown>[];lowStock?:{id:string;name:string;inventory:number}[]};
 export function Dashboard(){const [summary,setSummary]=useState<Summary|null>(null),[error,setError]=useState("");
- useEffect(()=>{let alive=true;fetch("/api/admin/summary").then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);if(alive)setSummary(d)}).catch(e=>{if(alive)setError(e.message)});return()=>{alive=false}},[]);
+ useEffect(()=>{let alive=true;adminFetch("/api/admin/summary").then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);if(alive)setSummary(d)}).catch(e=>{if(alive)setError(e.message)});return()=>{alive=false}},[]);
  const isStore=summary?.siteType!=="CORPORATE";
  return <div className="page-anim"><div className="page-heading"><div><span className="section-overline">نمای کلی</span><h1>خوش آمدی <span className="heading-wave">✳</span></h1><p>وضعیت {isStore?"فروشگاه":"سایت"} را در یک نگاه ببین.</p></div><Link className="button btn-outline" href="/admin/settings"><Icon name="settings" size={17}/> تنظیمات سایت</Link></div>
  {error&&<div role="alert" className="error-box">{error}</div>}
