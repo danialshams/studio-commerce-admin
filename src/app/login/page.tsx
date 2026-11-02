@@ -1,4 +1,5 @@
 "use client";
+import {adminFetch} from "@/lib/demo-api";
 import {useState, type FormEvent} from "react";
 import {useRouter} from "next/navigation";
 import {ArrowLeft,Eye,EyeOff,LockKeyhole,ShieldCheck,Store} from "lucide-react";
@@ -6,7 +7,7 @@ export default function Login(){
  const router=useRouter();const [email,setEmail]=useState(""),[password,setPassword]=useState("");
  const [visible,setVisible]=useState(false),[error,setError]=useState(""),[loading,setLoading]=useState(false);
  async function submit(event:FormEvent){event.preventDefault();setLoading(true);setError("");
-  try{const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+  try{const res=await adminFetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
     const data=await res.json();if(!res.ok)throw new Error(data.error||"ورود ناموفق بود");router.replace("/admin");router.refresh();}
   catch(e){setError(e instanceof Error?e.message:"خطایی رخ داد");}finally{setLoading(false);}}
  return <main className="login-screen"><section className="login-panel">
