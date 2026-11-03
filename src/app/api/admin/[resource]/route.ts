@@ -30,7 +30,7 @@ export async function GET(request:NextRequest,{params}:Context){
   try{
     const [total,items]=await Promise.all([d.count({where}),d.findMany({where,orderBy,skip:(page-1)*take,take,
       ...(resource==="products"?{include:{category:{select:{name:true}},variants:true}}:{}),
-      ...(resource==="orders"?{include:{items:true,payments:{select:{id:true,amount:true,status:true,provider:true,reference:true}}}}:{}),
+      ...(resource==="orders"?{include:{items:{include:{product:{select:{name:true,sku:true,coverUrl:true}}}},customer:{select:{id:true,fullName:true,phone:true,email:true}},payments:{select:{id:true,amount:true,status:true,provider:true,reference:true,createdAt:true}}}}:{}),
       ...(resource==="customers"?{include:{_count:{select:{orders:true}}}}:{})})]);
     return NextResponse.json({items,total,page,pages:Math.ceil(total/take)});
   }catch(e){return NextResponse.json({error:clientError(e)},{status:500});}
