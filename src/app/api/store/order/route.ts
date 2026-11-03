@@ -15,9 +15,11 @@ const equal=(a:string,b:string)=>{const x=createHash("sha256").update(a).digest(
 
 /** Server-to-server only. The shared secret must never reach browser JavaScript. */
 export async function POST(req:NextRequest){
- const secret=process.env.STORE_API_SECRET;
- if(!secret || secret.length<32)return fail("Order service is not configured",503);
- if(!equal(req.headers.get("x-storefront-key")||"",secret))return fail("Unauthorized",401);
+ const secrets=[process.env.STORE_API_SECRET,process.env.STORE_API_SECRET_V2]
+  .filter((key):key is string=>typeof key==="string" && key.length>=32);
+ if(!secrets.length)return fail("Order service is not configured",503);
+ const supplied=req.headers.get("x-storefront-key")||"";
+ if(!secrets.some(secret=>equal(supplied,secret)))return fail("Unauthorized",401);
  if(Number(req.headers.get("content-length")||0)>30000)return fail("Request too large",413);
  const parsed=schema.safeParse(await req.json().catch(()=>null));
  if(!parsed.success)return fail("اطلاعات سفارش معتبر نیست.",400);
