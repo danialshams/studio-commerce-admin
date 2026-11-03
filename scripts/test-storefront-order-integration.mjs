@@ -36,7 +36,7 @@ try{
   const variant=p.variants[0];
   await db.shippingMethod.create({data:{id:"ci-shipping",title:"Post",cost:40000,freeAbove:300000,enabled:true}});
   await db.coupon.create({data:{code:"CITEST10",type:"PERCENT",amount:10,minSubtotal:0,enabled:true}});
-  server=spawn("npm",["run","start","--","-p","3349"],{
+  server=spawn(process.execPath,["./node_modules/next/dist/bin/next","start","-p","3349"],{
     env:{...process.env,STORE_API_SECRET:secret,PORT:"3349",HOSTNAME:"127.0.0.1"},
     stdio:["ignore","pipe","pipe"]
   });
@@ -91,5 +91,9 @@ try{
   process.exitCode=1;
 }finally{
   if(server && server.exitCode===null)server.kill("SIGTERM");
+  server?.stdout?.destroy();
+  server?.stderr?.destroy();
   await db.$disconnect();
+  await delay(150);
+  process.exit(process.exitCode??0);
 }
