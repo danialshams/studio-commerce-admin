@@ -143,6 +143,7 @@ try{
   await waitFor(()=>evalJS('document.querySelectorAll(".data-table tbody tr").length>0 && !!document.querySelector(".row-actions button")'),view.name+" orders list");
   await evalJS('document.querySelector(".row-actions button").click();true');
   await waitFor(()=>evalJS('!!document.querySelector(".order-details")'),view.name+" order details");
+  await sleep(350); // allow the entry animation to reach its final viewport position
   const order=await evalJS(`(() => {
    const root=document.querySelector(".modal-backdrop"),panel=root?.querySelector(".editor-panel");
    const r=panel?.getBoundingClientRect();
@@ -157,7 +158,7 @@ try{
   assert.ok(order.portal&&order.items>=2&&order.fields>=6&&order.priceRows===4&&order.payments>=1,
    view.name+": order panel must include buyer, every line item, delivery, payment and totals "+JSON.stringify(order));
   assert.ok(order.hasBuyer&&!order.hasRawJSON,view.name+": use structured, not JSON order information");
-  assert.ok(order.panelRight<=view.w+2&&order.panelBottom<=view.h+2,view.name+": order drawer not clipped");
+  assert.ok(order.panelRight<=view.w+2&&order.panelBottom<=view.h+2,view.name+": order drawer not clipped "+JSON.stringify(order));
   if(view.name==="desktop"||view.name==="mobile"){
    const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
    writeFileSync(join(outputDir,view.name+"-order.png"),Buffer.from(shot.data,"base64"));
@@ -172,5 +173,5 @@ try{
  client?.close();
  if(chrome&&!chrome.killed)chrome.kill("SIGTERM");
  if(server?.pid){try{process.kill(-server.pid,"SIGTERM")}catch{server.kill("SIGTERM")}}
- rmSync(profile,{recursive:true,force:true});
+ try{rmSync(profile,{recursive:true,force:true,maxRetries:6,retryDelay:300})}catch{ /* the CI runner cleans up Chrome profile after the process exits */ }
 }
