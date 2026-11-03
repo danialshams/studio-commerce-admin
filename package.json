@@ -2,7 +2,9 @@
   "name": "studio-commerce-admin",
   "version": "0.1.0",
   "private": true,
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -13,7 +15,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "admin:setup": "node --env-file=.env scripts/setup-admin.mjs"
+    "admin:setup": "node --env-file=.env scripts/setup-admin.mjs",
+    "db:seed-storefront-demo": "node scripts/seed-storefront-demo.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
