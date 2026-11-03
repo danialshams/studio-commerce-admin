@@ -13,6 +13,9 @@ const schema=z.object({
   orderNoticeEmail:z.string().max(180).nullable().optional(),seoTitle:z.string().max(120).nullable().optional(),
   seoDescription:z.string().max(500).nullable().optional(),homeSections:z.array(z.object({
     id:z.string().max(64),title:z.string().max(140),description:z.string().max(500),imageUrl:url,
+    mobileImageUrl:url,secondaryImageUrl:url,ctaLabel:z.string().max(60).optional(),
+    ctaHref:z.union([z.string().startsWith("/").max(240).refine(v=>!v.startsWith("//")&&!v.includes("\\")),z.literal("")]).optional(),
+    layout:z.enum(["split","overlap","full"]).optional(),animation:z.enum(["mask","fade","slide"]).optional(),
     enabled:z.boolean(),position:z.number().int().min(0).max(200)
   })).max(35).default([])
 });

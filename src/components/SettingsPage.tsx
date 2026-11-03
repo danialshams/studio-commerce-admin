@@ -2,7 +2,7 @@
 import {adminFetch} from "@/lib/demo-api";
 import {useEffect,useState,type FormEvent} from "react";
 import {Icon} from "@/components/Icon";
-type Section={id:string;title:string;description:string;imageUrl?:string|null;enabled:boolean;position:number};
+type Section={id:string;title:string;description:string;imageUrl?:string|null;mobileImageUrl?:string|null;secondaryImageUrl?:string|null;ctaLabel?:string;ctaHref?:string;layout?:"split"|"overlap"|"full";animation?:"mask"|"fade"|"slide";enabled:boolean;position:number};
 type Settings={siteType:"STORE"|"CORPORATE";themeId:"design-1"|"design-2"|"design-3"|"custom";storeName:string;description:string;logoUrl?:string|null;contactEmail?:string|null;contactPhone?:string|null;address?:string|null;instagram?:string|null;orderNoticeEmail?:string|null;seoTitle?:string|null;seoDescription?:string|null;homeSections:Section[]};
 export function SettingsPage(){
  const [data,setData]=useState<Settings|null>(null),[saving,setSaving]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState(false);
@@ -36,7 +36,14 @@ export function SettingsPage(){
    <div className="section-list">{data.homeSections.map((x,i)=><div className="settings-section" key={x.id}><div className="section-toolbar"><strong>سکشن {i+1}</strong><button className="icon-button danger-icon" type="button" onClick={()=>removeSection(i)} aria-label="حذف سکشن"><Icon name="trash-2" size={18}/></button></div>
     <div className="settings-grid"><label>عنوان<input value={x.title} onChange={e=>editSection(i,"title",e.target.value)}/></label><label>ترتیب<input type="number" min={0} max={200} value={x.position} onChange={e=>editSection(i,"position",Number(e.target.value))}/></label>
       <label className="wide">توضیحات<textarea rows={2} value={x.description} onChange={e=>editSection(i,"description",e.target.value)}/></label>
-      <label className="wide">آدرس تصویر<input dir="ltr" value={x.imageUrl||""} onChange={e=>editSection(i,"imageUrl",e.target.value)}/></label>
+      <label className="wide">آدرس تصویر اصلی<input dir="ltr" value={x.imageUrl||""} onChange={e=>editSection(i,"imageUrl",e.target.value)} placeholder="https://..."/></label>
+      <div className="wide" style={{padding:"12px 14px",background:"var(--surface-muted,#f6f4f0)",borderRadius:10,margin:"8px 0 3px"}}><strong style={{fontSize:12}}>جزئیات ادیتوریال — ویژه طراحی ۲</strong><p style={{fontSize:11,margin:"5px 0 0",opacity:.75}}>تصویر دوم، تصویر موبایل، چیدمان و حرکت اختیاری هستند. خالی‌بودن آن‌ها اطلاعات دمو را حفظ می‌کند.</p></div>
+      <label>تصویر ویژه موبایل<input dir="ltr" type="url" value={x.mobileImageUrl||""} onChange={e=>editSection(i,"mobileImageUrl",e.target.value)} placeholder="https://..."/></label>
+      <label>تصویر لایه دوم<input dir="ltr" type="url" value={x.secondaryImageUrl||""} onChange={e=>editSection(i,"secondaryImageUrl",e.target.value)} placeholder="https://..."/></label>
+      <label>عنوان دکمه<input maxLength={60} value={x.ctaLabel||""} onChange={e=>editSection(i,"ctaLabel",e.target.value)} placeholder="کشف کالکشن"/></label>
+      <label>لینک دکمه<input dir="ltr" maxLength={240} value={x.ctaHref||""} onChange={e=>editSection(i,"ctaHref",e.target.value)} placeholder="/products"/></label>
+      <label>چیدمان تصویر و متن<select value={x.layout||"split"} onChange={e=>editSection(i,"layout",e.target.value as Section["layout"])}><option value="split">دو ستون مجله‌ای</option><option value="overlap">تصاویر لایه‌ای</option><option value="full">تصویر تمام‌عرض</option></select></label>
+      <label>نوع انیمیشن<select value={x.animation||"mask"} onChange={e=>editSection(i,"animation",e.target.value as Section["animation"])}><option value="mask">آشکارشدن ماسکی</option><option value="fade">فید ملایم</option><option value="slide">ورود از کنار</option></select></label>
       <label className="checkbox-label wide"><input type="checkbox" checked={x.enabled} onChange={e=>editSection(i,"enabled",e.target.checked)}/> نمایش در سایت</label></div></div>)}</div>
     <button className="button btn-outline" type="button" disabled={data.homeSections.length>=35} onClick={()=>set("homeSections",[...data.homeSections,{id:crypto.randomUUID(),title:"سکشن جدید",description:"",imageUrl:"",enabled:true,position:data.homeSections.length}])}>افزودن سکشن <Icon name="plus" size={17}/></button>
     <p className="field-help">قالب‌های ۱، ۲ و ۳ می‌توانند از همین داده‌ها استفاده کنند؛ شکل نمایش هرکدام در فرانت‌اند خود قالب تعیین می‌شود.</p>
