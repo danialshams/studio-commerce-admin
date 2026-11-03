@@ -41,3 +41,5 @@ jobs:
           path: .artifacts/dialogs/*.png
           if-no-files-found: ignore
       - run: npm run build
+      - name: Integration test of checkout with disposable PostgreSQL
+        run: node scripts/test-storefront-order-integration.mjs
