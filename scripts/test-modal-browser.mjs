@@ -8,7 +8,7 @@ import {join,resolve} from "node:path";
 
 if(process.env.NEXT_PUBLIC_STUDIO_DEMO!=="1")throw Error("Browser regression is allowed only in isolated demo mode");
 const port=39177;
-const appURL=`http://127.0.0.1:${port}`;
+const appURL=`http://localhost:${port}`;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function waitFor(check,label,timeout=45000){
  const start=Date.now();
