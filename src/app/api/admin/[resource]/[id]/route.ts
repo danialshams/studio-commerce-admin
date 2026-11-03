@@ -18,7 +18,7 @@ export async function GET(request:NextRequest,{params}:Context){
   const {resource,id}=await params;const error=await allowed(request,resource);if(error)return error;
   try{
     const item=await delegate(resource).findUnique({where:{id},...(resource==="products"?{include:{variants:true,category:true}}:{}),
-      ...(resource==="orders"?{include:{items:true,payments:true}}:{})});
+      ...(resource==="orders"?{include:{items:{include:{product:{select:{name:true,sku:true,coverUrl:true}}}},customer:{select:{id:true,fullName:true,phone:true,email:true}},payments:true}}:{})});
     if(!item)return NextResponse.json({error:"مورد پیدا نشد"},{status:404});
     return NextResponse.json({item});
   }catch(e){return NextResponse.json({error:clientError(e)},{status:400});}

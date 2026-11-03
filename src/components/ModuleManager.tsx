@@ -2,6 +2,7 @@
 import {adminFetch} from "@/lib/demo-api";
 import {useCallback,useEffect,useState,type FormEvent} from "react";
 import {Icon} from "@/components/Icon";
+import {ModalPortal} from "@/components/ModalPortal";
 import {LABELS,MONEY_FIELDS,modules,type Field} from "@/lib/config";
 import {formatDate,formatMoney,formatValue,humanize,slugify,statusLabels} from "@/lib/ui";
 
@@ -54,22 +55,101 @@ function VariantEditor({value,onChange}:{value:VariantValue[];onChange:(v:Varian
  <small className="field-help">اگر محصول رنگ یا سایز متفاوت ندارد، این بخش را خالی بگذار.</small>
  </div>;
 }
+function record(value:unknown):Record<string,unknown>{
+ return value&&typeof value==="object"&&!Array.isArray(value)?value as Record<string,unknown>:{};
+}
+function filled(value:unknown){return value===null||value===undefined||value===""?"ثبت نشده":String(value)}
+function DisplayDetail({label,value,phone=false}:{label:string;value:unknown;phone?:boolean}){
+ const present=value!==null&&value!==undefined&&String(value)!=="";
+ return <div className="order-info-field"><dt>{label}</dt><dd>{phone&&present?<a dir="ltr" href={`tel:${String(value)}`}>{String(value)}</a>:filled(value)}</dd></div>;
+}
+const addressLabels:Record<string,string>={
+ recipientName:"نام تحویل‌گیرنده",recipientPhone:"شماره تحویل‌گیرنده",
+ fullName:"نام تحویل‌گیرنده",phone:"تلفن تحویل",
+ province:"استان",state:"استان",city:"شهر",county:"شهرستان",
+ street:"خیابان",address:"نشانی",addressLine1:"نشانی",addressLine2:"تکمیل نشانی",
+ postalCode:"کد پستی",zip:"کد پستی",zipCode:"کد پستی",building:"ساختمان",
+ plaque:"پلاک",unit:"واحد",floor:"طبقه",notes:"توضیحات تحویل"
+};
 function OrderDetails({item}:{item:RecordItem}){
- const items=Array.isArray(item.items)?item.items as Record<string,unknown>[]:[];
+ const lines=Array.isArray(item.items)?item.items as Record<string,unknown>[]:[];
  const payments=Array.isArray(item.payments)?item.payments as Record<string,unknown>[]:[];
- return <div className="order-details"><h3>اقلام سفارش</h3>
-  {items.length?items.map((x,i)=><div className="order-detail-row" key={i}><div><strong>{String(x.title||"محصول")}</strong><small>{Number(x.quantity||0).toLocaleString("fa-IR")} عدد × {formatMoney(Number(x.unitPrice||0))}</small></div><strong>{formatMoney(Number(x.total||0))}</strong></div>):<p className="dim-text">این سفارش اقلام ثبت‌شده ندارد.</p>}
-  <div className="order-total"><span>مبلغ نهایی</span><strong>{formatMoney(Number(item.total||0))}</strong></div>
-  <h3>پرداخت‌ها</h3>{payments.map((p,i)=><div className="order-detail-row" key={i}><span>{String(p.provider)} — {humanize(p.status)}</span><strong>{formatMoney(Number(p.amount||0))}</strong></div>)}
-  <h3>اطلاعات تحویل</h3><pre>{JSON.stringify(item.shippingAddress||{},null,2)}</pre>
+ const customer=record(item.customer),address=record(item.shippingAddress);
+ const entries=Object.entries(address).filter(([,v])=>v!==null&&v!==undefined&&String(v).trim()!=="");
+ return <div className="order-details" dir="rtl">
+  <div className="order-overview">
+   <div><span className="section-overline">جزئیات کامل سفارش</span>
+    <h3>سفارش #{formatValue(Number(item.number||0))}</h3>
+    <p>ثبت در {formatDate(item.createdAt)}</p></div>
+   <Status value={item.status}/>
+  </div>
+  <section className="order-detail-section" aria-labelledby="order-customer-title">
+   <h3 id="order-customer-title"><Icon name="users" size={18}/> اطلاعات خریدار</h3>
+   <dl className="order-info-grid">
+    <DisplayDetail label="نام و نام خانوادگی" value={item.customerName||customer.fullName}/>
+    <DisplayDetail label="شماره موبایل" value={item.customerPhone||customer.phone} phone/>
+    <DisplayDetail label="ایمیل" value={item.customerEmail||customer.email}/>
+    <DisplayDetail label="شناسه مشتری" value={item.customerId||customer.id}/>
+   </dl>
+  </section>
+  <section className="order-detail-section" aria-labelledby="order-items-title">
+   <h3 id="order-items-title"><Icon name="package" size={18}/> محصولات سفارش ({formatValue(lines.length)})</h3>
+   {lines.length?lines.map((line,index)=>{
+    const product=record(line.product),options=record(line.selectedOptions);
+    const variant=line.variantLabel||line.variantName;
+    const image=line.imageUrl||product.coverUrl;
+    return <article className="order-item-card" key={String(line.id||index)}>
+     <div className="order-item-top">
+      <div className="order-item-image">{image?<img src={String(image)} alt={String(line.title||"تصویر محصول")}/>:<Icon name="package" size={23}/>}</div>
+      <div className="order-item-name"><strong>{filled(line.title)}</strong>
+       {Boolean(variant)&&<span>مدل / تنوع: {String(variant)}</span>}
+       {Boolean(line.sku)&&<span>کد کالا: <b dir="ltr">{String(line.sku)}</b></span>}
+       {Boolean(line.productId)&&<span>شناسه محصول: <b dir="ltr">{String(line.productId)}</b></span>}
+      </div>
+     </div>
+     {Object.keys(options).length>0&&<dl className="order-item-options">{Object.entries(options).map(([k,v])=><div key={k}><dt>{k}</dt><dd>{filled(v)}</dd></div>)}</dl>}
+     <div className="order-item-prices">
+      <span>تعداد: <strong>{formatValue(Number(line.quantity||0))}</strong></span>
+      <span>قیمت واحد: <strong>{formatMoney(Number(line.unitPrice||0))}</strong></span>
+      <span>جمع: <strong>{formatMoney(Number(line.total||0))}</strong></span>
+     </div>
+    </article>;
+   }):<p className="order-empty-note">هنوز اقلامی برای این سفارش ثبت نشده است.</p>}
+  </section>
+  <section className="order-detail-section" aria-labelledby="order-address-title">
+   <h3 id="order-address-title"><Icon name="truck" size={18}/> تحویل و ارسال</h3>
+   <dl className="order-info-grid">
+    <DisplayDetail label="روش ارسال" value={item.shippingMethod}/>
+    <DisplayDetail label="کد رهگیری" value={item.trackingCode}/>
+    {entries.map(([k,v])=><DisplayDetail key={k} label={addressLabels[k]||k} value={typeof v==="object"?JSON.stringify(v):v} phone={k==="recipientPhone"||k==="phone"}/>)}
+   </dl>
+   {!entries.length&&<p className="order-empty-note">نشانی تحویل برای این سفارش ثبت نشده است.</p>}
+  </section>
+  <section className="order-detail-section" aria-labelledby="order-payments-title">
+   <h3 id="order-payments-title"><Icon name="credit-card" size={18}/> جزئیات پرداخت</h3>
+   {payments.length?payments.map((p,index)=><div className="order-payment-card" key={String(p.id||index)}>
+    <div><strong>{filled(p.provider)}</strong><Status value={p.status}/></div>
+    <div className="order-payment-meta">
+     <span>مبلغ: <b>{formatMoney(Number(p.amount||0))}</b></span>
+     <span>شماره پیگیری: <b dir="ltr">{filled(p.reference)}</b></span>
+     {Boolean(p.createdAt)&&<span>تاریخ: <b>{formatDate(p.createdAt)}</b></span>}
+    </div>
+   </div>):<p className="order-empty-note">تراکنشی ثبت نشده است.</p>}
+   <dl className="order-amounts">
+    <div><dt>جمع کالاها</dt><dd>{formatMoney(Number(item.subtotal||0))}</dd></div>
+    <div><dt>تخفیف</dt><dd>{formatMoney(Number(item.discountTotal||0))}</dd></div>
+    <div><dt>هزینه ارسال</dt><dd>{formatMoney(Number(item.shippingCost||0))}</dd></div>
+    <div className="order-grand-total"><dt>مبلغ نهایی سفارش</dt><dd>{formatMoney(Number(item.total||0))}</dd></div>
+   </dl>
+  </section>
+  {Boolean(item.note)&&<section className="order-detail-section"><h3>یادداشت سفارش</h3><p className="order-note">{String(item.note)}</p></section>}
  </div>;
 }
 function Editor({section,item,onClose,onSuccess,categories}:{section:string;item:RecordItem|null;onClose:()=>void;onSuccess:()=>void;categories:RecordItem[]}){
  const mod=modules[section],fields=mod.fields;
  const [values,setValues]=useState<Record<string,unknown>>(()=>initFields(fields,item||undefined));
  const [saving,setSaving]=useState(false),[uploading,setUploading]=useState<string|null>(null),[error,setError]=useState("");
- const [tab,setTab]=useState<"edit"|"details">(fields.length?"edit":"details");
- useEffect(()=>{function key(e:KeyboardEvent){if(e.key==="Escape")onClose();}window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key)},[onClose]);
+ const [tab,setTab]=useState<"edit"|"details">((item&&section==="orders")||!fields.length?"details":"edit");
  async function save(e:FormEvent){e.preventDefault();setSaving(true);setError("");
   try{const body=section==="orders"||section==="reviews"||section==="leads"?payload(fields,values):payload(fields,values);
    const resp=await adminFetch("/api/admin/"+section+(item?"/"+item.id:""),{method:item?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
@@ -82,10 +162,10 @@ function Editor({section,item,onClose,onSuccess,categories}:{section:string;item
  function change(key:string,val:unknown){setValues(prev=>{const next={...prev,[key]:val};if(key==="name"||key==="title"){const hasSlug=fields.some(x=>x.key==="slug");
     if(hasSlug&&!item&&!prev.slug)next.slug=slugify(String(val));}return next;});}
  const readonly=!fields.length;
- return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><section className="editor-panel" role="dialog" aria-modal="true" aria-labelledby="editor-title">
-  <header className="editor-header"><div><span className="section-overline">{mod.title}</span><h2 id="editor-title">{item?`مشاهده و ویرایش ${mod.plural}`:`ایجاد ${mod.plural} جدید`}</h2></div><button className="icon-button" aria-label="بستن" onClick={onClose}><Icon name="x" size={21}/></button></header>
-  {item&&(section==="orders"||section==="payments"||section==="reviews")&&<nav className="editor-tabs" aria-label="بخش‌های جزئیات"><button className={tab==="edit"?"active":""} onClick={()=>setTab("edit")}>مدیریت</button><button className={tab==="details"?"active":""} onClick={()=>setTab("details")}>جزئیات</button></nav>}
-  {tab==="details"&&item?<div className="editor-body details-body">{section==="orders"&&<OrderDetails item={item}/>}<dl>{Object.entries(item).filter(([k])=>!["shippingAddress"].includes(k)).map(([key,val])=><div key={key}><dt>{LABELS[key]||key}</dt><dd>{Array.isArray(val)?`${val.length} مورد`:typeof val==="object"?JSON.stringify(val):MONEY_FIELDS.has(key)&&typeof val==="number"?formatMoney(val):humanize(val)}</dd></div>)}</dl>{section==="orders"&&<button className="button btn-outline" onClick={()=>window.print()}>چاپ جزئیات سفارش</button>}</div>:readonly?<div className="editor-body"><p className="note-box">این اطلاعات صرفاً جهت مشاهده هستند و از این پنل قابل تغییر نیستند.</p></div>:<form onSubmit={save} className="editor-form"><div className="editor-body"><div className="editor-grid">{fields.map(field=><div className={"field-group "+(["description","body","summary","notes","variants","gallery","seoDescription"].includes(field.key)?"wide":"")} key={field.key}>
+ return <ModalPortal onClose={onClose} variant="drawer"><section className="editor-panel" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+  <header className="editor-header"><div><span className="section-overline">{mod.title}</span><h2 id="editor-title">{item?`مشاهده و ویرایش ${mod.plural}`:`ایجاد ${mod.plural} جدید`}</h2></div><button className="icon-button" aria-label="بستن" data-dialog-initial-focus onClick={onClose}><Icon name="x" size={21}/></button></header>
+  {item&&(section==="orders"||section==="reviews")&&<nav className="editor-tabs" aria-label="بخش‌های جزئیات"><button className={tab==="details"?"active":""} onClick={()=>setTab("details")}>{section==="orders"?"جزئیات سفارش":"جزئیات"}</button><button className={tab==="edit"?"active":""} onClick={()=>setTab("edit")}>{section==="orders"?"مدیریت وضعیت":"مدیریت"}</button></nav>}
+  {tab==="details"&&item?<div className="editor-body details-body">{section==="orders"?<OrderDetails item={item}/>:<dl>{Object.entries(item).map(([key,val])=><div key={key}><dt>{LABELS[key]||key}</dt><dd>{Array.isArray(val)?`${val.length} مورد`:typeof val==="object"?JSON.stringify(val):MONEY_FIELDS.has(key)&&typeof val==="number"?formatMoney(val):humanize(val)}</dd></div>)}</dl>}</div>:readonly?<div className="editor-body"><p className="note-box">این اطلاعات صرفاً جهت مشاهده هستند و از این پنل قابل تغییر نیستند.</p></div>:<form onSubmit={save} className="editor-form"><div className="editor-body"><div className="editor-grid">{fields.map(field=><div className={"field-group "+(["description","body","summary","notes","variants","gallery","seoDescription"].includes(field.key)?"wide":"")} key={field.key}>
      {field.type==="checkbox"?<label className="checkbox-label"><input type="checkbox" checked={Boolean(values[field.key])} onChange={e=>change(field.key,e.target.checked)}/><span>{field.label}</span></label>:<><label htmlFor={"field-"+field.key}>{field.label}{field.required&&<em> *</em>}</label>
       {field.key==="variants"?<VariantEditor value={(values.variants as VariantValue[])||[]} onChange={v=>change("variants",v)}/>
       :field.type==="textarea"?<textarea id={"field-"+field.key} value={String(values[field.key]??"")} rows={field.key==="body"?9:field.key==="description"?5:3} onChange={e=>change(field.key,e.target.value)} placeholder={field.help||""}/>
@@ -99,7 +179,7 @@ function Editor({section,item,onClose,onSuccess,categories}:{section:string;item
      </div>)}</div>{error&&<div role="alert" className="error-box">{error}</div>}
      {section==="products"&&<p className="note-box"><Icon name="check" size={16}/> حذف محصول به شکل آرشیو است؛ سوابق سفارش‌ها حفظ می‌شوند.</p>}
   </div><footer className="editor-footer"><button className="button btn-outline" type="button" onClick={onClose}>انصراف</button><button className="button btn-primary" type="submit" disabled={saving||Boolean(uploading)}>{saving?"در حال ذخیره...":item?"ذخیره تغییرات":"ایجاد و ذخیره"}<Icon name="check" size={17}/></button></footer></form>}
- </section></div>;
+ </section></ModalPortal>;
 }
 export function ModuleManager({section}:{section:string}){
  const mod=modules[section];
@@ -138,6 +218,6 @@ export function ModuleManager({section}:{section:string}){
   <div className="table-pagination"><button className="button btn-outline small-btn" disabled={page<=1} onClick={()=>setPage(page-1)}>قبلی</button><span>صفحه {formatValue(page)} از {formatValue(Math.max(1,data?.pages||1))}</span><button className="button btn-outline small-btn" disabled={!data||page>=data.pages} onClick={()=>setPage(page+1)}>بعدی</button></div>
   </section>
   {editing&&<Editor key={editing==="create"?"create":editing.id} section={section} item={editing==="create"?null:editing} categories={categories} onClose={()=>setEditing(null)} onSuccess={done}/>}
-  {deleting&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setDeleting(null)}}><div role="alertdialog" aria-modal="true" aria-labelledby="delete-title" className="confirm-card"><span className="confirm-icon"><Icon name="alert" size={24}/></span><h2 id="delete-title">{section==="products"?"آرشیو محصول":"حذف این مورد"}</h2><p>{section==="products"?"محصول از فروشگاه پنهان می‌شود، ولی در پنل باقی می‌ماند و سوابق سفارش حفظ می‌شود.":"این عملیات قابل بازگشت نیست. مطمئن هستی؟"}</p><div className="confirm-actions"><button className="button btn-outline" onClick={()=>setDeleting(null)}>انصراف</button><button className="button btn-danger" disabled={busyDelete} onClick={remove}>{busyDelete?"در حال انجام...":section==="products"?"آرشیو محصول":"حذف مورد"}</button></div></div></div>}
+  {deleting&&<ModalPortal onClose={()=>{if(!busyDelete)setDeleting(null)}} variant="confirm"><div role="alertdialog" aria-modal="true" aria-labelledby="delete-title" className="confirm-card" aria-describedby="delete-description"><span className="confirm-icon"><Icon name="alert" size={24}/></span><h2 id="delete-title">{section==="products"?"آرشیو محصول":"حذف این مورد"}</h2><p id="delete-description">{section==="products"?"محصول از فروشگاه پنهان می‌شود، ولی در پنل باقی می‌ماند و سوابق سفارش حفظ می‌شود.":"این عملیات قابل بازگشت نیست. مطمئن هستی؟"}</p><div className="confirm-actions"><button className="button btn-outline" data-dialog-initial-focus onClick={()=>setDeleting(null)}>انصراف</button><button className="button btn-danger" disabled={busyDelete} onClick={remove}>{busyDelete?"در حال انجام...":section==="products"?"آرشیو محصول":"حذف مورد"}</button></div></div></ModalPortal>}
  </div>;
 }

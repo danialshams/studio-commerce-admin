@@ -152,6 +152,7 @@ model Order {
   customerId String?
   customerName String
   customerPhone String
+  customerEmail String?
   shippingAddress Json @default("{}")
   shippingMethod String?
   shippingCost Int @default(0)
@@ -174,6 +175,9 @@ model OrderItem {
   productId String?
   title String
   sku String?
+  variantLabel String?
+  imageUrl String?
+  selectedOptions Json @default("{}")
   quantity Int
   unitPrice Int
   total Int
