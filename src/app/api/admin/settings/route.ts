@@ -16,6 +16,17 @@ const schema=z.object({
     mobileImageUrl:url,secondaryImageUrl:url,ctaLabel:z.string().max(60).optional(),
     ctaHref:z.union([z.string().startsWith("/").max(240).refine(v=>!v.startsWith("//")&&!v.includes("\\")),z.literal("")]).optional(),
     layout:z.enum(["split","overlap","full"]).optional(),animation:z.enum(["mask","fade","slide"]).optional(),
+    // Optional Edition 03 visual controls live in the existing homeSections JSON; no schema migration.
+    role:z.enum(["hero","story","scene","campaign","standard"]).optional(),
+    theme:z.enum(["dark","light"]).optional(),
+    scenes:z.array(z.object({
+      title:z.string().max(140),description:z.string().max(500),imageUrl:url,
+      tag:z.string().max(70).optional()
+    })).max(5).optional(),
+    hotspots:z.array(z.object({
+      x:z.number().min(0).max(100),y:z.number().min(0).max(100),
+      productId:z.string().min(1).max(150),label:z.string().max(90).optional()
+    })).max(8).optional(),
     enabled:z.boolean(),position:z.number().int().min(0).max(200)
   })).max(35).default([])
 });
