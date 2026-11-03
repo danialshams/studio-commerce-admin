@@ -102,9 +102,9 @@ function OrderDetails({item}:{item:RecordItem}){
      <div className="order-item-top">
       <div className="order-item-image">{image?<img src={String(image)} alt={String(line.title||"تصویر محصول")}/>:<Icon name="package" size={23}/>}</div>
       <div className="order-item-name"><strong>{filled(line.title)}</strong>
-       {variant&&<span>مدل / تنوع: {String(variant)}</span>}
-       {line.sku&&<span>کد کالا: <b dir="ltr">{String(line.sku)}</b></span>}
-       {line.productId&&<span>شناسه محصول: <b dir="ltr">{String(line.productId)}</b></span>}
+       {Boolean(variant)&&<span>مدل / تنوع: {String(variant)}</span>}
+       {Boolean(line.sku)&&<span>کد کالا: <b dir="ltr">{String(line.sku)}</b></span>}
+       {Boolean(line.productId)&&<span>شناسه محصول: <b dir="ltr">{String(line.productId)}</b></span>}
       </div>
      </div>
      {Object.keys(options).length>0&&<dl className="order-item-options">{Object.entries(options).map(([k,v])=><div key={k}><dt>{k}</dt><dd>{filled(v)}</dd></div>)}</dl>}
@@ -132,7 +132,7 @@ function OrderDetails({item}:{item:RecordItem}){
     <div className="order-payment-meta">
      <span>مبلغ: <b>{formatMoney(Number(p.amount||0))}</b></span>
      <span>شماره پیگیری: <b dir="ltr">{filled(p.reference)}</b></span>
-     {p.createdAt&&<span>تاریخ: <b>{formatDate(p.createdAt)}</b></span>}
+     {Boolean(p.createdAt)&&<span>تاریخ: <b>{formatDate(p.createdAt)}</b></span>}
     </div>
    </div>):<p className="order-empty-note">تراکنشی ثبت نشده است.</p>}
    <dl className="order-amounts">
@@ -142,7 +142,7 @@ function OrderDetails({item}:{item:RecordItem}){
     <div className="order-grand-total"><dt>مبلغ نهایی سفارش</dt><dd>{formatMoney(Number(item.total||0))}</dd></div>
    </dl>
   </section>
-  {item.note&&<section className="order-detail-section"><h3>یادداشت سفارش</h3><p className="order-note">{String(item.note)}</p></section>}
+  {Boolean(item.note)&&<section className="order-detail-section"><h3>یادداشت سفارش</h3><p className="order-note">{String(item.note)}</p></section>}
  </div>;
 }
 function Editor({section,item,onClose,onSuccess,categories}:{section:string;item:RecordItem|null;onClose:()=>void;onSuccess:()=>void;categories:RecordItem[]}){
