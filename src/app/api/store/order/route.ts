@@ -15,7 +15,7 @@ const equal=(a:string,b:string)=>{const x=createHash("sha256").update(a).digest(
 
 /** Server-to-server only. The shared secret must never reach browser JavaScript. */
 export async function POST(req:NextRequest){
- const secrets=[process.env.STORE_API_SECRET,process.env.STORE_API_SECRET_V2]
+ const secrets=[process.env.STORE_API_SECRET,process.env.STORE_API_SECRET_V2,process.env.STORE_API_SECRET_V3]
   .filter((key):key is string=>typeof key==="string" && key.length>=32);
  if(!secrets.length)return fail("Order service is not configured",503);
  const supplied=req.headers.get("x-storefront-key")||"";
