@@ -10,8 +10,14 @@ export function EditionTwoMediaPage(){
  const [catalog,setCatalog]=useState<EdCatalog>(empty),[config,setConfig]=useState<EditionTwoConfig>(editionTwoDefaults);
  const [q,setQ]=useState(""),[tab,setTab]=useState("all"),[uploading,setUploading]=useState(false),[notice,setNotice]=useState("");
  const [added,setAdded]=useState<string[]>([]);
- useEffect(()=>{adminFetch("/api/admin/edition-2").then(r=>r.json()).then(d=>{if(d.catalog)setCatalog(d.catalog);
-  if(d.draft)setConfig(d.draft)}).catch(()=>setNotice("کتابخانه تصاویر فعلاً در دسترس نیست"))},[]);
+ const [stored,setStored]=useState<string[]>([]);
+ useEffect(()=>{
+  adminFetch("/api/admin/edition-2").then(r=>r.json()).then(d=>{if(d.catalog)setCatalog(d.catalog);
+   if(d.draft)setConfig(d.draft)}).catch(()=>setNotice("بخشی از اطلاعات فروشگاه در دسترس نیست"));
+  adminFetch("/api/admin/media?limit=200").then(r=>r.ok?r.json():null).then(d=>{
+   if(Array.isArray(d?.items))setStored(d.items.map((x:{url:string})=>x.url))
+  }).catch(()=>{});
+ },[]);
  const entries=useMemo(()=>{
   const sources=new Map<string,string>();
   const add=(url:string|undefined,source:string)=>{if(url&&!sources.has(url))sources.set(url,source)};
@@ -22,10 +28,11 @@ export function EditionTwoMediaPage(){
   catalog.products.forEach(x=>add(x.imageUrl,"products"));
   catalog.categories.forEach(x=>add(x.imageUrl,"categories"));
   catalog.articles.forEach(x=>add(x.imageUrl,"articles"));
+  stored.forEach(x=>add(x,"uploaded"));
   added.forEach(x=>add(x,"uploaded"));
   getMediaOptions(catalog).forEach(x=>add(x,"templates"));
   return Array.from(sources,( [url,source]):Item=>({url,source}));
- },[catalog,config,added]);
+ },[catalog,config,added,stored]);
  const shown=entries.filter(x=>(tab==="all"||tab===x.source)&&x.url.toLowerCase().includes(q.toLowerCase()));
  async function upload(e:ChangeEvent<HTMLInputElement>){
   const file=e.target.files?.[0];e.target.value="";if(!file)return;setUploading(true);setNotice("");
