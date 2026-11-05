@@ -117,6 +117,16 @@ try{
   assert.ok(Math.abs(layout.panel.right-view.w)<4,view.name+": drawer must be anchored to RIGHT edge");
   assert.ok(layout.scrollLocked&&layout.formVisible,view.name+": dialog must lock scroll and show form");
   if(view.w<=600)assert.ok(Math.abs(layout.panel.bottom-view.h)<4,view.name+": mobile sheet must reach bottom");
+  // The same visual media picker is available inside product/gallery editing.
+  // Nested dialogs must not close the underlying product on Escape.
+  assert.ok(await evalJS('!!document.querySelector(".ed2-merch-preview") && !!document.querySelector(".ed2-gallery-editor")'),
+    view.name+": commerce editor has no product card / gallery preview");
+  await evalJS('document.querySelector(".editor-panel .ed2-media-trigger").click();true');
+  await waitFor(()=>evalJS('document.querySelectorAll(".modal-backdrop").length===2'),view.name+" nested media library");
+  await send("Input.dispatchKeyEvent",{type:"keyDown",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});
+  await send("Input.dispatchKeyEvent",{type:"keyUp",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});
+  await waitFor(()=>evalJS('document.querySelectorAll(".modal-backdrop").length===1 && !!document.querySelector(".editor-panel")'),
+   view.name+" nested modal must close without closing product editor");
   if(view.name==="desktop"||view.name==="mobile"){
    const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
    writeFileSync(join(outputDir,view.name+"-product.png"),Buffer.from(shot.data,"base64"));
