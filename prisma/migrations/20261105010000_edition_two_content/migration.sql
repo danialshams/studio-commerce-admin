@@ -1,3 +1,5 @@
 ALTER TABLE "StoreSettings"
  ADD COLUMN IF NOT EXISTS "editorialConfig" JSONB,
  ADD COLUMN IF NOT EXISTS "editorialDraft" JSONB;
+
+ALTER TABLE "Banner" ADD COLUMN IF NOT EXISTS "target" JSONB;
