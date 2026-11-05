@@ -1,5 +1,5 @@
 "use client";
-import {useEffect,useRef,useState,type ReactNode} from "react";
+import {useEffect,useLayoutEffect,useRef,useState,type ReactNode} from "react";
 import {createPortal} from "react-dom";
 
 /**
@@ -16,7 +16,7 @@ export function ModalPortal({children,onClose,variant="drawer"}:{
  closeRef.current=onClose;
 
  useEffect(()=>setMounted(true),[]);
- useEffect(()=>{
+ useLayoutEffect(()=>{
   if(!mounted)return;
   const previousOverflow=document.body.style.overflow;
   const previousPadding=document.body.style.paddingRight;
