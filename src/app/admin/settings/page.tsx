@@ -1,2 +1,2 @@
-import {SettingsPage} from "@/components/SettingsPage";
-export default function Page(){return <SettingsPage/>;}
+import {EditionTwoSettings} from "@/components/EditionTwoSettings";
+export default function Page(){return <EditionTwoSettings/>;}
