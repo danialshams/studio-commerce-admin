@@ -10,7 +10,7 @@ export const modules:Record<string,ModuleDefinition>={
       {key:"price",label:"قیمت (تومان)",type:"number",required:true,min:0},
       {key:"comparePrice",label:"قیمت قبل از تخفیف (تومان)",type:"number",min:0},
       {key:"inventory",label:"موجودی",type:"number",min:0},{key:"lowStockAt",label:"آستانه هشدار موجودی",type:"number",min:0},
-      {key:"coverUrl",label:"تصویر شاخص",type:"image"},{key:"gallery",label:"گالری تصاویر (هر خط یک آدرس)",type:"textarea"},
+      {key:"coverUrl",label:"تصویر شاخص",type:"image"},{key:"gallery",label:"گالری تصاویر",type:"textarea"},
       {key:"status",label:"وضعیت محصول",type:"select",options:option([["DRAFT","پیش‌نویس"],["ACTIVE","منتشرشده"],["ARCHIVED","آرشیوشده"]])},
       {key:"featured",label:"نمایش در محصولات ویژه",type:"checkbox"},
       {key:"variants",label:"تنوع‌ها (رنگ، سایز، مدل)",type:"textarea",help:"برای هر رنگ یا سایز، قیمت و موجودی مستقل تعیین کن"}
