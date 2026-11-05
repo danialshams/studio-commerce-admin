@@ -421,3 +421,27 @@ body:has(.ed2-admin) .note-box{background:#f6f1e9;border-color:#e7ddcf;color:#81
    Mobile drawer keeps the same accessible Escape/close behavior. */
 @media(min-width:981px){.ed2-sidebar .ed2-shell-close{display:none}}
 @media(max-width:980px){.ed2-sidebar .ed2-shell-close{display:grid}}
+
+/* Dedicated editorial login, distinct from the older blue Studio interface. */
+.login-screen{background:#f2efe9;color:#342d26}
+.login-panel{border:1px solid #e5ddd3;background:#fffefa;border-radius:12px;box-shadow:0 24px 75px #25201a0d;gap:0;padding:12px}
+.login-logo{font-family:Georgia,serif;color:#3e342c;gap:14px;font-size:12px;font-weight:500;direction:ltr;display:flex}
+.login-logo>span{background:#e7ded1;color:#493a2b;border-radius:6px;width:57px;height:48px;font-size:25px;letter-spacing:-1px;display:grid;place-items:center}
+.login-logo .ed2-brand-dot{color:#a37c55}
+.login-logo>div{display:grid;gap:0;letter-spacing:.15em}
+.login-logo>div small{font-size:10px;letter-spacing:.08em}
+.login-art{border-radius:8px;background:linear-gradient(0deg,#221b15be,#261e1620 62%),url("https://essential-store-design-2.vercel.app/images/editorial/story-portrait.webp") center/cover no-repeat;justify-content:flex-end;min-height:520px;color:#fff}
+.login-art>span{width:auto;height:auto;background:none;color:#e4d4bb;letter-spacing:.2em;font-family:Georgia,serif;font-size:11px;display:block}
+.login-art h1{color:#fff;font-size:clamp(25px,3.3vw,35px);font-weight:550;line-height:1.9;margin:12px 0}
+.login-art p{color:#ede6da;font-size:12px;line-height:2.2}
+.login-card{padding-inline:45px}
+.login-lock{background:#f3ebdf;border-radius:9px;color:#806c54}
+.login-intro h2{color:#322820;font-size:25px;font-weight:650}
+.login-intro p{color:#93877a}
+.login-card label{color:#746657;font-weight:650}
+.login-card input{border:1px solid #ded4c9!important;background:#fcfaf7!important;border-radius:7px!important;color:#3c3026!important}
+.login-card input:focus{border-color:#ad947a!important;box-shadow:0 0 0 3px #a98c7320!important}
+.login-submit{background:#342e28;color:#fff;border-radius:7px;font-weight:730}
+.login-submit:hover{background:#4e4338}
+.login-foot{color:#a29485}
+@media(max-width:840px){.login-panel{max-width:500px;padding:18px;min-height:440px}.login-logo{top:29px;right:31px}.login-card{padding:104px 20px 26px}}
