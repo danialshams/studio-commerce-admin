@@ -234,6 +234,13 @@ try{
     "/admin/shipping","/admin/reviews","/admin/customers","/admin/payments"]){
     await send("Page.navigate",{url:appURL+route});
     await waitFor(()=>evalJS('!!document.querySelector("main h1")'),view.name+" route "+route,22000);
+    if(view.w<=600){
+     // CDP navigations can show SSR before the route's viewport metadata
+     // is applied. Assert actual physical device-width layout, not a
+     // momentary desktop-scaled mobile layout.
+     await waitFor(()=>evalJS("document.readyState==='complete' && !!document.querySelector('meta[name=viewport]') && innerWidth<="+(view.w+5)),
+      view.name+" physical mobile viewport on "+route,15000);
+    }
     const width=await evalJS(`(() => ({
      page:document.documentElement.scrollWidth,
      viewport:window.innerWidth,
