@@ -96,7 +96,7 @@ try{
    adminId:administrator.id,tokenHash:createHash("sha256").update(adminToken).digest("hex"),
    expiresAt:new Date(Date.now()+3600000)
   }});
-  const editorHeaders={"Content-Type":"application/json",origin,
+  const editorHeaders={"Content-Type":"application/json",origin:"http://localhost:3349",
    cookie:"studio_admin_session="+adminToken};
   const cmsRequest=async(method,body,path="/api/admin/edition-2",headers=editorHeaders)=>{
    const response=await fetch(origin+path,{method,headers,
