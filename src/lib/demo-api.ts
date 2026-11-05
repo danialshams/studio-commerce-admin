@@ -5,6 +5,7 @@
  * All writes stay in this tab's memory and never reach the real server.
  * Production installs must leave this variable unset.
  */
+import {editionTwoDefaults,type EditionTwoConfig} from "@/lib/edition-two";
 export const DEMO_MODE = process.env.NEXT_PUBLIC_STUDIO_DEMO === "1";
 type Item = Record<string,unknown> & {id:string};
 type DemoState = {settings:Record<string,unknown>;records:Record<string,Item[]>};
@@ -48,9 +49,11 @@ const seeds:Record<string,Item[]>={
  leads:[item("l1",{name:"مشتری آزمایشی",phone:"09120000003",subject:"درخواست مشاوره",message:"سلام، برای دریافت اطلاعات تماس می‌گیرم.",status:"NEW"})]
 };
 let state:DemoState|undefined;
+let editionTwoDraft:EditionTwoConfig|undefined;
+let editionTwoPublished:EditionTwoConfig|undefined;
 function getState(){
  if(!state)state={
-   settings:{id:"main",siteType:"STORE",themeId:"design-1",storeName:"فروشگاه نمونه",description:"محیط آزمایشی پنل مدیریت",logoUrl:null,contactEmail:"hello@example.invalid",contactPhone:"",address:"",instagram:"",orderNoticeEmail:"",seoTitle:"فروشگاه نمونه",seoDescription:"",homeSections:[
+   settings:{id:"main",siteType:"STORE",themeId:"design-2",storeName:"ESSENTIAL",description:"محیط آزمایشی پنل مدیریت",logoUrl:null,contactEmail:"hello@example.invalid",contactPhone:"",address:"",instagram:"",orderNoticeEmail:"",seoTitle:"فروشگاه نمونه",seoDescription:"",homeSections:[
     {id:"home-1",title:"بنر اصلی",description:"جدیدترین محصولات",imageUrl:null,enabled:true,position:0},
     {id:"home-2",title:"محصولات منتخب",description:"انتخاب‌های ویژه",imageUrl:null,enabled:true,position:1}]},
    records:JSON.parse(JSON.stringify(seeds))
@@ -62,6 +65,22 @@ export async function adminFetch(input:RequestInfo|URL,init?:RequestInit):Promis
  const url=new URL(typeof input==="string"?input:input.toString(),"https://demo.invalid");
  const path=url.pathname,method=(init?.method||"GET").toUpperCase(),data=getState();
  if(path==="/api/auth/logout")return response({ok:true});
+ if(path==="/api/admin/edition-2"){
+  const categories=data.records.categories.map(x=>({id:String(x.id),name:String(x.name),slug:String(x.slug||""),imageUrl:String(x.imageUrl||"")}));
+  const products=data.records.products.filter(x=>x.status==="ACTIVE").map(x=>({id:String(x.id),name:String(x.name),slug:String(x.slug||""),imageUrl:String(x.coverUrl||"")}));
+  const articles=data.records.articles.filter(x=>x.status==="PUBLISHED").map(x=>({id:String(x.id),name:String(x.title),slug:String(x.slug||""),imageUrl:String(x.coverUrl||"")}));
+  const pages=[...data.records.pages.filter(x=>x.status==="PUBLISHED").map(x=>({id:String(x.id),name:String(x.title),slug:String(x.slug||"")})),
+   {id:"about",name:"درباره ما",slug:"about"},{id:"contact",name:"تماس با ما",slug:"contact"},
+   {id:"terms",name:"قوانین و مقررات",slug:"terms"},{id:"privacy",name:"حریم خصوصی",slug:"privacy"},
+   {id:"blog",name:"ژورنال",slug:"blog"},{id:"faq",name:"سوالات متداول",slug:"faq"}];
+  if(method==="GET")return response({draft:editionTwoDraft||editionTwoPublished||editionTwoDefaults,
+   published:editionTwoPublished||null,hasUnpublishedDraft:Boolean(editionTwoDraft),
+   catalog:{categories,products,articles,pages}});
+  if(method==="PUT"){editionTwoDraft=JSON.parse(String(init?.body||"{}")) as EditionTwoConfig;return response({saved:true})}
+  if(method==="POST"){if(!editionTwoDraft)return response({error:"ابتدا پیش‌نویس را ذخیره کنید"},400);
+   editionTwoPublished=editionTwoDraft;editionTwoDraft=undefined;return response({published:true})}
+ }
+
  if(path==="/api/admin/upload")return response({error:"آپلود در دمو غیرفعال است. از آدرس تصویر استفاده کن."},400);
  if(path==="/api/admin/settings"){
   if(method==="GET")return response({settings:data.settings});
