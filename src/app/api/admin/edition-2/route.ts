@@ -3,7 +3,7 @@ import {db} from "@/lib/db";
 import {requireApiAdmin} from "@/lib/security";
 import {editionTwoDefaults} from "@/lib/edition-two";
 import {editionTwoSchema} from "@/lib/edition-two-schema";
-import type {Prisma} from "@prisma/client";
+import {Prisma} from "@prisma/client";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 async function access(request:NextRequest){
