@@ -37,7 +37,8 @@ export async function GET(req:NextRequest){
     {id:"about",name:"درباره ما",slug:"about"},{id:"contact",name:"تماس با ما",slug:"contact"},
     {id:"privacy",name:"حریم خصوصی",slug:"privacy"},{id:"terms",name:"قوانین و مقررات",slug:"terms"},
     {id:"shipping",name:"ارسال و مرجوعی",slug:"shipping"},{id:"faq",name:"سؤالات متداول",slug:"faq"},
-    {id:"blog",name:"ژورنال",slug:"blog"}]}
+    {id:"blog",name:"ژورنال",slug:"blog"},
+    {id:"cart",name:"سبد خرید",slug:"cart"},{id:"account",name:"حساب من",slug:"account"}]}
  },{headers:{"Cache-Control":"no-store"}});
 }
 export async function PUT(req:NextRequest){
@@ -54,7 +55,7 @@ export async function POST(req:NextRequest){
  const parsed=editionTwoSchema.safeParse(settings?.editorialDraft);
  if(!parsed.success)return NextResponse.json({error:"ابتدا پیش‌نویس معتبر را ذخیره کنید."},{status:400});
  const config=parsed.data;
- const targets=[...config.hero.map(s=>s.target),config.campaign.target,config.story.target,...config.navigation.map(s=>s.target)];
+ const targets=[...config.hero.map(s=>s.target),config.campaign.target,config.story.target,...config.navigation.map(s=>s.target),...config.footerColumns.flatMap(c=>c.links.map(l=>l.target))];
  const [productIds,categoryIds,articleIds,pageIds]=await Promise.all([
   db.product.findMany({where:{status:"ACTIVE"},select:{id:true}}),
   db.category.findMany({select:{id:true,slug:true}}),
@@ -62,7 +63,7 @@ export async function POST(req:NextRequest){
   db.page.findMany({where:{status:"PUBLISHED"},select:{id:true,slug:true}})
  ]);
  const ids={product:new Set(productIds.map(x=>x.id)),category:new Set(categoryIds.flatMap(x=>[x.id,x.slug])),
-  article:new Set(articleIds.map(x=>x.id)),page:new Set([...pageIds.flatMap(x=>[x.id,x.slug]),"blog","about","contact","terms","privacy","shipping","faq"])};
+  article:new Set(articleIds.map(x=>x.id)),page:new Set([...pageIds.flatMap(x=>[x.id,x.slug]),"blog","about","contact","terms","privacy","shipping","faq","cart","account"])};
  for(const t of targets){
   if(t.kind in ids && !ids[t.kind as keyof typeof ids].has(t.id||""))
    return NextResponse.json({error:"یکی از لینک‌های داخلی به محتوای حذف‌شده یا منتشرنشده اشاره دارد."},{status:400});
