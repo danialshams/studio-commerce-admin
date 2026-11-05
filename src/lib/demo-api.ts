@@ -72,7 +72,8 @@ export async function adminFetch(input:RequestInfo|URL,init?:RequestInit):Promis
   const pages=[...data.records.pages.filter(x=>x.status==="PUBLISHED").map(x=>({id:String(x.id),name:String(x.title),slug:String(x.slug||"")})),
    {id:"about",name:"درباره ما",slug:"about"},{id:"contact",name:"تماس با ما",slug:"contact"},
    {id:"terms",name:"قوانین و مقررات",slug:"terms"},{id:"privacy",name:"حریم خصوصی",slug:"privacy"},
-   {id:"blog",name:"ژورنال",slug:"blog"},{id:"faq",name:"سوالات متداول",slug:"faq"}];
+   {id:"blog",name:"ژورنال",slug:"blog"},{id:"faq",name:"سوالات متداول",slug:"faq"},
+   {id:"shipping",name:"ارسال و مرجوعی",slug:"shipping"},{id:"cart",name:"سبد خرید",slug:"cart"},{id:"account",name:"حساب من",slug:"account"}];
   if(method==="GET")return response({draft:editionTwoDraft||editionTwoPublished||editionTwoDefaults,
    published:editionTwoPublished||null,hasUnpublishedDraft:Boolean(editionTwoDraft),
    catalog:{categories,products,articles,pages}});
