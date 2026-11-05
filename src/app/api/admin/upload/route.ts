@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
-import {PutObjectCommand,S3Client} from "@aws-sdk/client-s3";
+import {PutObjectCommand,DeleteObjectCommand,S3Client} from "@aws-sdk/client-s3";
+import {db} from "@/lib/db";
 import {randomUUID} from "node:crypto";
 import {requireApiAdmin} from "@/lib/security";
 export const runtime="nodejs";
@@ -26,7 +27,18 @@ export async function POST(req:NextRequest){
   const key="media/"+new Date().toISOString().slice(0,7)+"/"+randomUUID()+"."+format.ext;
   try{
     await s3.send(new PutObjectCommand({Bucket:process.env.S3_BUCKET,Key:key,Body:bytes,ContentType:format.type,CacheControl:"public,max-age=31536000,immutable"}));
-    return NextResponse.json({url:process.env.S3_PUBLIC_URL.replace(/\/$/,"")+"/"+key});
+    const url=process.env.S3_PUBLIC_URL.replace(/\/$/,"")+"/"+key;
+    try{
+     await db.$transaction(async tx=>{
+      const created=await tx.mediaAsset.create({data:{url,storageKey:key,originalName:file.name.slice(0,160),mimeType:format.type,size:file.size}});
+      await tx.auditLog.create({data:{resource:"media",resourceId:created.id,operation:"UPLOAD"}});
+     });
+    }catch(error){
+     console.error("Uploaded media metadata could not be saved",error);
+     await s3.send(new DeleteObjectCommand({Bucket:process.env.S3_BUCKET,Key:key})).catch(()=>{});
+     return NextResponse.json({error:"ثبت تصویر در کتابخانه ناموفق بود. دوباره تلاش کنید."},{status:502});
+    }
+    return NextResponse.json({url});
   }catch{
     return NextResponse.json({error:"آپلود انجام نشد؛ اتصال فضای ذخیره‌سازی را بررسی کنید"},{status:502});
   }
