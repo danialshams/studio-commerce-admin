@@ -216,6 +216,29 @@ try{
   await evalJS('Array.from(document.querySelectorAll(".ed2-page-actions button")).find(x=>x.textContent.includes("انتشار")).click();true');
   await waitFor(()=>evalJS('document.querySelector(".ed2-message.success")?.textContent.includes("انتشار")'),
     view.name+" publish draft");
+  // Verify the remaining content and commerce routes don't overflow the
+  // mobile viewport or require a second navigation shell.
+  if(view.name==="desktop"||view.name==="mobile"){
+   for(const route of ["/admin","/admin/media","/admin/settings",
+    "/admin/articles","/admin/banners","/admin/categories","/admin/coupons",
+    "/admin/shipping","/admin/reviews","/admin/customers","/admin/payments"]){
+    await send("Page.navigate",{url:appURL+route});
+    await waitFor(()=>evalJS('!!document.querySelector("main h1")'),view.name+" route "+route,22000);
+    const width=await evalJS(`(() => ({
+     page:document.documentElement.scrollWidth,
+     viewport:window.innerWidth,
+     hasMenu:!!document.querySelector(".ed2-sidebar"),
+     content:document.querySelector("main")?.getBoundingClientRect().width
+    }))()`);
+    assert.ok(width.hasMenu&&width.content>250,view.name+": route missing layout "+route);
+    assert.ok(width.page<=view.w+5,
+     view.name+": route overflows viewport "+route+" "+JSON.stringify(width));
+   }
+   await send("Page.navigate",{url:appURL+"/admin/media"});
+   await waitFor(()=>evalJS('document.querySelector(".ed2-library-grid")!==null'),view.name+" media library");
+   const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+   writeFileSync(join(outputDir,view.name+"-library.png"),Buffer.from(shot.data,"base64"));
+  }
   summary.push({view:view.name,modal:"correct",confirm:"centered",order:"complete",editorial:"interactive"});
  }
  console.log("STUDIO_VIEWPORT_MODAL_PASS="+JSON.stringify(summary));
