@@ -163,7 +163,59 @@ try{
    const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
    writeFileSync(join(outputDir,view.name+"-order.png"),Buffer.from(shot.data,"base64"));
   }
-  summary.push({view:view.name,modal:"correct",confirm:"centered",order:"complete"});
+  // Edition 02 visual page builder: every homepage section is selectable,
+  // responsive and links are chosen by entity, never typed as internal URLs.
+  await send("Page.navigate",{url:appURL+"/admin/editorial"});
+  await waitFor(()=>evalJS('!!document.querySelector(".ed2-preview-screen") && document.querySelectorAll(".ed2-preview-section").length>=9'),
+   view.name+" editorial builder",22000);
+  const editor=await evalJS(`(() => {
+   const root=document.querySelector(".ed2-admin");
+   const preview=document.querySelector(".ed2-preview-column");
+   const settings=document.querySelector(".ed2-settings-column");
+   return {count:document.querySelectorAll(".ed2-preview-section").length,
+    width:document.documentElement.scrollWidth,screen:innerWidth,
+    preview:preview.getBoundingClientRect().width,
+    settings:settings.getBoundingClientRect().width,
+    controls:document.querySelectorAll(".ed2-part-selector button").length,
+    sidebar:getComputedStyle(document.querySelector(".ed2-sidebar")).position};
+  })()`);
+  assert.ok(editor.count>=9&&editor.controls>=9,view.name+": all nine homepage parts must be editable");
+  assert.ok(editor.width<=view.w+5,view.name+": visual editor has horizontal overflow "+JSON.stringify(editor));
+  assert.ok(editor.preview>220&&editor.settings>260,view.name+": editor preview and inspector are too narrow "+JSON.stringify(editor));
+  await evalJS('document.querySelectorAll(".ed2-part-selector button")[1].click();true');
+  await waitFor(()=>evalJS('document.querySelector(".ed2-inspector-title h2")?.textContent.includes("کالکشن")'),
+    view.name+" category editor");
+  await evalJS('document.querySelector(".ed2-part-selector button").click();true');
+  await waitFor(()=>evalJS('document.querySelector(".ed2-inspector-title h2")?.textContent.includes("هیرو")'),
+    view.name+" hero editor");
+  await evalJS('Array.from(document.querySelectorAll(".ed2-target-kinds button")).find(x=>x.textContent==="محصول").click();true');
+  await waitFor(()=>evalJS('!!document.querySelector(".ed2-target-results")'),view.name+" product destination list");
+  await evalJS('document.querySelector(".ed2-target-results button").click();true');
+  await waitFor(()=>evalJS('!!document.querySelector(".ed2-selected-target")'),view.name+" selected product destination");
+  const resolved=await evalJS('document.querySelector(".ed2-link-preview")?.textContent');
+  assert.ok(resolved.includes("/product/"),view.name+": internal link picker did not resolve selected product");
+  await evalJS('document.querySelector(".ed2-media-trigger").click();true');
+  await waitFor(()=>evalJS('!!document.querySelector(".modal-backdrop .ed2-media-modal")'),view.name+" image chooser");
+  const library=await evalJS(`(() => {
+   const p=document.querySelector(".ed2-media-modal"),r=p.getBoundingClientRect();
+   return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,pictures:p.querySelectorAll(".ed2-media-grid img").length};
+  })()`);
+  assert.ok(library.pictures>4,view.name+": image library has no selectable editorial photos");
+  assert.ok(library.left>=-2&&library.top>=-2&&library.right<=view.w+2&&library.bottom<=view.h+2,
+    view.name+": media drawer clips outside screen "+JSON.stringify(library));
+  await evalJS('document.querySelector(".ed2-media-grid button").click();true');
+  await waitFor(()=>evalJS('document.querySelector(".modal-backdrop .ed2-media-modal")===null'),view.name+" media selected");
+  if(view.name==="desktop"||view.name==="mobile"){
+   const shot=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:false});
+   writeFileSync(join(outputDir,view.name+"-editorial.png"),Buffer.from(shot.data,"base64"));
+  }
+  await evalJS('Array.from(document.querySelectorAll(".ed2-page-actions button")).find(x=>x.textContent.includes("ذخیره")).click();true');
+  await waitFor(()=>evalJS('document.querySelector(".ed2-message.success")?.textContent.includes("پیش‌نویس")'),
+    view.name+" save draft");
+  await evalJS('Array.from(document.querySelectorAll(".ed2-page-actions button")).find(x=>x.textContent.includes("انتشار")).click();true');
+  await waitFor(()=>evalJS('document.querySelector(".ed2-message.success")?.textContent.includes("انتشار")'),
+    view.name+" publish draft");
+  summary.push({view:view.name,modal:"correct",confirm:"centered",order:"complete",editorial:"interactive"});
  }
  console.log("STUDIO_VIEWPORT_MODAL_PASS="+JSON.stringify(summary));
 }catch(error){
