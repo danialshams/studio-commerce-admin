@@ -77,15 +77,15 @@ function CommerceVisualPreview({section,values}:{section:string;values:Record<st
  </section>;
 }
 function GalleryVisual({value,onChange,catalog}:{value:string;onChange:(s:string)=>void;catalog:EdCatalog}){
- const photos=value.split("\\n").map(x=>x.trim()).filter(Boolean);
+ const photos=value.split("\n").map(x=>x.trim()).filter(Boolean);
  return <div className="ed2-gallery-editor">
   <div className="ed2-gallery-photos">{photos.map((url,i)=><div key={i}>
    <img src={url} alt={"تصویر گالری "+(i+1)}/>
    <button type="button" title="حذف تصویر" aria-label={"حذف تصویر "+(i+1)} onClick={()=>
-    onChange(photos.filter((_,index)=>index!==i).join("\\n"))}>×</button>
+    onChange(photos.filter((_,index)=>index!==i).join("\n"))}>×</button>
   </div>)}</div>
   <MediaField label="افزودن عکس از کتابخانه تصاویر" value="" catalog={catalog}
-   onChange={url=>onChange([...photos,url].join("\\n"))}/>
+   onChange={url=>onChange([...photos,url].join("\n"))}/>
  </div>;
 }
 function record(value:unknown):Record<string,unknown>{
