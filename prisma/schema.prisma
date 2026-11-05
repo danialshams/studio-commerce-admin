@@ -300,3 +300,15 @@ model AuditLog {
   createdAt DateTime @default(now())
   @@index([resource,createdAt])
 }
+
+/** Persistent library: uploaded images stay discoverable even if unused in a section. */
+model MediaAsset {
+  id String @id @default(cuid())
+  url String @unique
+  storageKey String @unique
+  mimeType String
+  originalName String
+  size Int
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
