@@ -85,7 +85,13 @@ function VisualPreview({value,catalog,selected,onSelect,viewport,slideIndex}:{va
   </Editable>
   <Editable id="footer" selected={selected} select={onSelect} className="ed2-preview-footer">
    <small>{value.footer.eyebrow}</small><h2>{value.footer.title}</h2>
-   <div className="ed2-footer-nav">{value.footerColumns.flatMap(c=>c.links).map(x=><span key={x.id}>{x.label}</span>)}</div>
+   <div className="ed2-preview-footer-columns">
+    {value.footerColumns.map(column=><div key={column.id}>
+     <h3>{column.title}</h3>
+     {column.links.filter(link=>link.target.kind!=="none").map(link=><span key={link.id}>{link.label}</span>)}
+    </div>)}
+    <div><h3>در ارتباط باشیم</h3><span>تلفن و اطلاعات تماس فروشگاه</span><span>شبکه‌های اجتماعی</span></div>
+   </div>
    <strong>ESSENTIAL</strong><small>{value.footer.bottomNote}</small>
   </Editable>
  </div>;
