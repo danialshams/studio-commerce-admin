@@ -85,7 +85,7 @@ function VisualPreview({value,catalog,selected,onSelect,viewport,slideIndex}:{va
   </Editable>
   <Editable id="footer" selected={selected} select={onSelect} className="ed2-preview-footer">
    <small>{value.footer.eyebrow}</small><h2>{value.footer.title}</h2>
-   <div className="ed2-footer-nav">{value.navigation.map(x=><span key={x.id}>{x.label}</span>)}</div>
+   <div className="ed2-footer-nav">{value.footerColumns.flatMap(c=>c.links).map(x=><span key={x.id}>{x.label}</span>)}</div>
    <strong>ESSENTIAL</strong><small>{value.footer.bottomNote}</small>
   </Editable>
  </div>;
@@ -259,6 +259,36 @@ export function EditionTwoHomeEditor(){
        </div>)}
        <button type="button" className="ed2-button ed2-button-soft ed2-add-full" disabled={value.navigation.length>=12}
         onClick={()=>edit(v=>v.navigation.push({id:crypto.randomUUID(),label:"لینک جدید",target:{kind:"none"}}))}>افزودن لینک منو <Plus size={17}/></button>
+
+       <div className="ed2-mini-heading"><strong>ستون‌های لینک فوتر</strong><span>{value.footerColumns.length} ستون</span></div>
+       <p className="ed2-hint">ستون‌ها و لینک‌ها دقیقاً با همین ترتیب در فوتر فروشگاه نمایش داده می‌شوند. مقصد را از فهرست موجود انتخاب کنید.</p>
+       {value.footerColumns.map((col,i)=><div className="ed2-collection-editor" key={col.id}>
+         <div className="ed2-mini-heading"><strong>ستون {i+1}</strong>
+          <MoveControls index={i} total={value.footerColumns.length}
+           onUp={()=>edit(v=>swap(v.footerColumns,i,i-1))}
+           onDown={()=>edit(v=>swap(v.footerColumns,i,i+1))}
+           onRemove={()=>edit(v=>{v.footerColumns.splice(i,1)})}/>
+         </div>
+         <Field label="عنوان ستون" value={col.title} onChange={x=>edit(v=>{v.footerColumns[i].title=x})}/>
+         {col.links.map((entry,j)=><div className="ed2-collection-editor" key={entry.id}>
+           <div className="ed2-mini-heading"><strong>لینک {j+1}</strong>
+            <MoveControls index={j} total={col.links.length}
+             onUp={()=>edit(v=>swap(v.footerColumns[i].links,j,j-1))}
+             onDown={()=>edit(v=>swap(v.footerColumns[i].links,j,j+1))}
+             onRemove={()=>edit(v=>{v.footerColumns[i].links.splice(j,1)})}/>
+           </div>
+           <Field label="متن لینک" value={entry.label} onChange={x=>edit(v=>{v.footerColumns[i].links[j].label=x})}/>
+           {target(entry.target,x=>edit(v=>{v.footerColumns[i].links[j].target=x}))}
+         </div>)}
+         <button className="ed2-button ed2-button-soft ed2-add-full" type="button" disabled={col.links.length>=10}
+          onClick={()=>edit(v=>{v.footerColumns[i].links.push({id:crypto.randomUUID(),label:"لینک جدید",target:{kind:"none"}})})}>
+          افزودن لینک به این ستون <Plus size={15}/>
+         </button>
+       </div>)}
+       <button className="ed2-button ed2-button-soft ed2-add-full" type="button" disabled={value.footerColumns.length>=4}
+        onClick={()=>edit(v=>v.footerColumns.push({id:crypto.randomUUID(),title:"ستون جدید",links:[]}))}>
+        افزودن ستون جدید <Plus size={17}/>
+       </button>
        <Link className="ed2-button ed2-button-soft ed2-add-full" href="/admin/settings">تنظیمات تماس و شبکه‌های اجتماعی <ArrowLeft size={17}/></Link>
       </div>}
     </div>
