@@ -11,6 +11,7 @@ export type EditionTwoConfig={
  journal:{title:string;articleIds:string[]};
  benefits:Array<{id:string;title:string;description:string;icon:"truck"|"package"|"headphones"|"shield"}>;
  footer:{eyebrow:string;title:string;bottomNote:string};
+ footerColumns:Array<{id:string;title:string;links:Array<{id:string;label:string;target:Destination}>}>;
  navigation:Array<{id:string;label:string;target:Destination}>;
 };
 const origin="https://essential-store-design-2.vercel.app/images/editorial/";
@@ -39,6 +40,22 @@ export const editionTwoDefaults:EditionTwoConfig={
   {id:"support",title:"پشتیبانی و همراهی",description:"اطلاعات تماس از پنل مدیریت",icon:"headphones"}
  ],
  footer:{eyebrow:"THE WAY WE SEE STYLE",title:"سلیقه، در انتخاب‌های کوچک معنا پیدا می‌کند.",bottomNote:"ساخته‌شده با توجه به جزئیات"},
+ footerColumns:[
+  {id:"guide",title:"راهنمای خرید",links:[
+   {id:"all-products",label:"همه محصولات",target:{kind:"products"}},
+   {id:"shopping-cart",label:"سبد خرید",target:{kind:"page",id:"cart"}},
+   {id:"my-account",label:"حساب من",target:{kind:"page",id:"account"}},
+   {id:"delivery",label:"ارسال و مرجوعی",target:{kind:"page",id:"shipping"}},
+   {id:"questions",label:"سؤالات متداول",target:{kind:"page",id:"faq"}}
+  ]},
+  {id:"brand",title:"درباره فروشگاه",links:[
+   {id:"brand-story",label:"داستان ما",target:{kind:"page",id:"about"}},
+   {id:"brand-blog",label:"ژورنال",target:{kind:"page",id:"blog"}},
+   {id:"brand-contact",label:"ارتباط با ما",target:{kind:"page",id:"contact"}},
+   {id:"brand-privacy",label:"حریم خصوصی",target:{kind:"page",id:"privacy"}},
+   {id:"brand-terms",label:"قوانین و مقررات",target:{kind:"page",id:"terms"}}
+  ]}
+ ],
  navigation:[
   {id:"nav-home",label:"خانه",target:{kind:"home"}},
   {id:"nav-shop",label:"فروشگاه",target:products},
@@ -54,7 +71,7 @@ export function resolveTarget(target:Destination,catalog:EdCatalog):string{
   case "category":{const v=catalog.categories.find(x=>x.id===target.id||x.slug===target.id);return v?"/category/"+encodeURIComponent(v.slug):"/products";}
   case "product":{const v=catalog.products.find(x=>x.id===target.id);return v?"/product/"+encodeURIComponent(v.slug):"/products";}
   case "article":{const v=catalog.articles.find(x=>x.id===target.id);return v?"/blog/"+encodeURIComponent(v.slug):"/blog";}
-  case "page":{if(target.id==="blog")return "/blog";const v=catalog.pages.find(x=>x.id===target.id||x.slug===target.id);return v?"/info/"+encodeURIComponent(v.slug):"/info/about";}
+  case "page":{if(target.id==="blog")return "/blog";if(target.id==="cart")return "/cart";if(target.id==="account")return "/account";const v=catalog.pages.find(x=>x.id===target.id||x.slug===target.id);return v?"/info/"+encodeURIComponent(v.slug):"/info/about";}
   case "external":return target.url?.startsWith("https://")?target.url:"#";
   default:return "#";
  }
