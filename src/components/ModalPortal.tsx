@@ -32,6 +32,10 @@ export function ModalPortal({children,onClose,variant="drawer"}:{
    initial?.focus({preventScroll:true});
   });
   function onKeyDown(event:KeyboardEvent){
+   // A media chooser can open above a product editor. Only the topmost
+   // modal owns Escape and focus cycling; don't close both at once.
+   const overlays=Array.from(document.body.querySelectorAll(".modal-backdrop"));
+   if(overlays[overlays.length-1]!==rootRef.current)return;
    if(event.key==="Escape"){event.preventDefault();closeRef.current();return}
    if(event.key!=="Tab")return;
    const focusables=Array.from(rootRef.current?.querySelectorAll<HTMLElement>(
