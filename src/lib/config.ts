@@ -1,4 +1,4 @@
-export type Field={key:string;label:string;type?:"text"|"number"|"textarea"|"select"|"checkbox"|"image"|"date";options?:{value:string;label:string}[];required?:boolean;min?:number;help?:string};
+export type Field={key:string;label:string;type?:"text"|"number"|"textarea"|"select"|"checkbox"|"image"|"date"|"destination";options?:{value:string;label:string}[];required?:boolean;min?:number;help?:string};
 export type ModuleDefinition={title:string;description:string;icon:string;plural:string;fields:Field[];columns:string[];readonly?:boolean;storeOnly?:boolean;corporateOnly?:boolean};
 const option=(pairs:[string,string][])=>pairs.map(([value,label])=>({value,label}));
 export const modules:Record<string,ModuleDefinition>={
@@ -47,7 +47,7 @@ export const modules:Record<string,ModuleDefinition>={
     {key:"seoTitle",label:"عنوان سئو"},{key:"seoDescription",label:"توضیحات سئو",type:"textarea"}]},
   banners:{title:"بنرها و اسلایدر",description:"تصاویر و دکمه‌های تبلیغاتی صفحه اصلی",icon:"images",plural:"بنر",columns:["title","position","active"],fields:[
     {key:"title",label:"عنوان بنر",required:true},{key:"subtitle",label:"زیرعنوان"},{key:"imageUrl",label:"تصویر",type:"image"},
-    {key:"linkUrl",label:"لینک دکمه"},{key:"position",label:"ترتیب نمایش",type:"number",min:0},
+    {key:"target",label:"مقصد دکمه",type:"destination"},{key:"position",label:"ترتیب نمایش",type:"number",min:0},
     {key:"active",label:"فعال باشد",type:"checkbox"}]},
   services:{title:"خدمات",description:"معرفی خدمات سایت شرکتی",icon:"briefcase",plural:"خدمت",corporateOnly:true,columns:["title","slug","active"],fields:[
     {key:"title",label:"عنوان خدمت",required:true},{key:"slug",label:"نامک انگلیسی",required:true},
