@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {editionTwoDefaults} from "@/lib/edition-two";
 const target=z.object({kind:z.enum(["none","home","products","product","category","page","article","external"]),
  id:z.string().max(150).optional(),url:z.string().max(2000).optional()}).superRefine((value,ctx)=>{
   if(["product","category","page","article"].includes(value.kind)&&!value.id)
@@ -26,5 +27,8 @@ export const editionTwoSchema=z.object({
  benefits:z.array(z.object({id:z.string().max(80),title:z.string().max(120),
   description:z.string().max(200),icon:z.enum(["truck","package","headphones","shield"])})).max(6),
  footer:z.object({eyebrow:z.string().max(100),title:z.string().max(200),bottomNote:z.string().max(140)}),
+ footerColumns:z.array(z.object({id:z.string().max(80),title:z.string().max(70),
+  links:z.array(z.object({id:z.string().max(80),label:z.string().max(60),target})).max(10)
+ })).max(4).default(editionTwoDefaults.footerColumns),
  navigation:z.array(z.object({id:z.string().max(80),label:z.string().max(50),target})).max(12)
 }).strict();
