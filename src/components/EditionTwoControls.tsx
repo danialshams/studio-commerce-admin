@@ -32,7 +32,7 @@ export function DestinationPicker({label="مقصد دکمه",value,onChange,cata
   <span className="ed2-field-label">{label}</span>
   <div className="ed2-target-kinds" role="group" aria-label="نوع مقصد">
    {kinds.map(item=><button key={item.value} type="button" className={value.kind===item.value?"selected":""}
-    onClick={()=>{const kind=item.value;setQuery("");setOpened(false);onChange(kind==="external"?{kind,url:""}:hasEntity&&kind===value.kind?value:{kind});}}>
+    onClick={()=>{const kind=item.value;setQuery("");setOpened(["category","product","page","article"].includes(kind));onChange(kind==="external"?{kind,url:""}:hasEntity&&kind===value.kind?value:{kind});}}>
     {item.label}</button>)}
   </div>
   {hasEntity&&<div className="ed2-target-search"><div className="ed2-search-field">
