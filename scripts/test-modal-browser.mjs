@@ -235,6 +235,15 @@ try{
     await send("Page.navigate",{url:appURL+route});
     await waitFor(()=>evalJS('!!document.querySelector("main h1")'),view.name+" route "+route,22000);
     if(view.w<=600){
+     // Chromium can reset page-level emulation during repeated hard navigations.
+     // Reapply the physical device viewport after navigation, as on real mobile.
+     await send("Emulation.setDeviceMetricsOverride",{
+      width:view.w,height:view.h,deviceScaleFactor:1,mobile:true,
+      screenWidth:view.w,screenHeight:view.h
+     });
+     await send("Emulation.setTouchEmulationEnabled",{enabled:true,maxTouchPoints:1});
+    }
+    if(view.w<=600){
      // CDP navigations can show SSR before the route's viewport metadata
      // is applied. Assert actual physical device-width layout, not a
      // momentary desktop-scaled mobile layout.
