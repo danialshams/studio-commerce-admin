@@ -77,6 +77,8 @@ model StoreSettings {
   seoTitle String?
   seoDescription String?
   homeSections Json @default("[]")
+  editorialConfig Json?
+  editorialDraft Json?
   updatedAt DateTime @updatedAt
 }
 model Category {
