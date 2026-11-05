@@ -69,7 +69,16 @@ export function getMediaOptions(catalog:EdCatalog,extras:string[]=[]){
 }
 export function MediaField({label,value,onChange,catalog,extras=[]}:{label:string;value:string;onChange:(value:string)=>void;catalog:EdCatalog;extras?:string[]}){
  const [open,setOpen]=useState(false),[search,setSearch]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
- const choices=useMemo(()=>getMediaOptions(catalog,[...extras,value]),[catalog,extras,value]);
+ const [saved,setSaved]=useState<string[]>([]);
+ const choices=useMemo(()=>getMediaOptions(catalog,[...extras,...saved,value]),[catalog,extras,saved,value]);
+ async function loadMedia(){
+  try{
+   const response=await adminFetch("/api/admin/media?limit=200");
+   if(!response.ok)return;
+   const data=await response.json();
+   if(Array.isArray(data.items))setSaved(data.items.map((x:{url:string})=>x.url));
+  }catch{/* keep existing content available when library endpoint is temporarily unavailable */}
+ }
  const filtered=choices.filter(url=>url.toLowerCase().includes(search.toLowerCase()));
  async function upload(event:ChangeEvent<HTMLInputElement>){
   const file=event.target.files?.[0];event.target.value="";
@@ -81,12 +90,12 @@ export function MediaField({label,value,onChange,catalog,extras=[]}:{label:strin
    const response=await adminFetch("/api/admin/upload",{method:"POST",body:form});
    const result=await response.json();
    if(!response.ok)throw new Error(result.error||"آپلود تصویر ناموفق بود");
-   onChange(String(result.url));setOpen(false);
+   setSaved(old=>[String(result.url),...old]);onChange(String(result.url));setOpen(false);
   }catch(e){setError(e instanceof Error?e.message:"خطای آپلود تصویر")}
   finally{setBusy(false)}
  }
  return <div className="ed2-field ed2-media-control"><span className="ed2-field-label">{label}</span>
-  <button type="button" className="ed2-media-trigger" onClick={()=>{setSearch("");setError("");setOpen(true)}}>
+  <button type="button" className="ed2-media-trigger" onClick={()=>{setSearch("");setError("");setOpen(true);void loadMedia()}}>
    {value?<img src={value} alt="تصویر انتخاب‌شده"/>:<span className="ed2-no-image"><ImageIcon size={25}/></span>}
    <span><strong>{value?"تغییر تصویر":"انتخاب تصویر"}</strong><small>از تصاویر موجود انتخاب کنید یا عکس جدید بارگذاری کنید</small></span>
    <Images size={19}/>
