@@ -14,7 +14,7 @@ export const editionTwoSchema=z.object({
  announcement:z.string().max(180),
  hero:z.array(z.object({id:z.string().max(80),title:z.string().max(160),description:z.string().max(800),
   eyebrow:z.string().max(90),imageUrl:image,mobileImageUrl:image,ctaLabel:z.string().max(60),
-  target,enabled:z.boolean()})).min(1).max(6),
+  target,enabled:z.boolean()})).min(1).max(6).refine(items=>items.some(x=>x.enabled),"حداقل یک اسلاید هیرو باید فعال باشد"),
  categories:z.object({title:z.string().max(100),items:z.array(z.object({categoryId:z.string().max(150),
   imageUrl:image.optional()})).max(8)}),
  featured:z.object({title:z.string().max(100),description:z.string().max(240),
