@@ -12,8 +12,8 @@ export async function GET(){
    db.category.findMany({orderBy:{name:"asc"}}),
    db.product.findMany({where:{status:"ACTIVE"},orderBy:{createdAt:"desc"},take:600,include:{category:{select:{name:true,slug:true}},variants:true}}),
    db.banner.findMany({where:{active:true},orderBy:{position:"asc"}}),
-   db.page.findMany({where:{status:"PUBLISHED"},select:{slug:true,title:true,body:true,seoTitle:true,seoDescription:true}}),
-   db.article.findMany({where:{status:"PUBLISHED"},orderBy:{createdAt:"desc"},take:100,select:{slug:true,title:true,summary:true,body:true,coverUrl:true,createdAt:true,seoTitle:true,seoDescription:true}}),
+   db.page.findMany({where:{status:"PUBLISHED"},select:{id:true,slug:true,title:true,body:true,seoTitle:true,seoDescription:true}}),
+   db.article.findMany({where:{status:"PUBLISHED"},orderBy:{createdAt:"desc"},take:100,select:{id:true,slug:true,title:true,summary:true,body:true,coverUrl:true,createdAt:true,seoTitle:true,seoDescription:true}}),
    db.shippingMethod.findMany({where:{enabled:true},orderBy:{title:"asc"}}),
    db.review.findMany({where:{status:"APPROVED"},orderBy:{createdAt:"desc"},take:400,select:{productId:true,author:true,rating:true,body:true,createdAt:true}})
   ]);
@@ -22,7 +22,8 @@ export async function GET(){
    siteType:settings.siteType,themeId:settings.themeId,storeName:settings.storeName,
    description:settings.description,logoUrl:settings.logoUrl,contactEmail:settings.contactEmail,
    contactPhone:settings.contactPhone,address:settings.address,instagram:settings.instagram,
-   seoTitle:settings.seoTitle,seoDescription:settings.seoDescription,homeSections:settings.homeSections
+   seoTitle:settings.seoTitle,seoDescription:settings.seoDescription,homeSections:settings.homeSections,
+   editorialConfig:settings.editorialConfig
   }:null;
   return NextResponse.json({mode:"live",settings:publicSettings,categories,products,banners,pages,articles,shipping,reviews},
    {headers:{"Cache-Control":"public, s-maxage=10, stale-while-revalidate=20"}});
