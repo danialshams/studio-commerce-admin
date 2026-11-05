@@ -189,6 +189,7 @@ try{
   await waitFor(()=>evalJS('document.querySelector(".ed2-inspector-title h2")?.textContent.includes("هیرو")'),
     view.name+" hero editor");
   await evalJS('Array.from(document.querySelectorAll(".ed2-target-kinds button")).find(x=>x.textContent==="محصول").click();true');
+  await evalJS('document.querySelector(".ed2-target-search input")?.focus();true');
   await waitFor(()=>evalJS('!!document.querySelector(".ed2-target-results")'),view.name+" product destination list");
   await evalJS('document.querySelector(".ed2-target-results button").click();true');
   await waitFor(()=>evalJS('!!document.querySelector(".ed2-selected-target")'),view.name+" selected product destination");
