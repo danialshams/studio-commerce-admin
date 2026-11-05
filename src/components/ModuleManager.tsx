@@ -3,7 +3,7 @@ import {adminFetch} from "@/lib/demo-api";
 import {useCallback,useEffect,useState,type FormEvent} from "react";
 import {Icon} from "@/components/Icon";
 import {ModalPortal} from "@/components/ModalPortal";
-import {DestinationPicker} from "@/components/EditionTwoControls";
+import {DestinationPicker,MediaField} from "@/components/EditionTwoControls";
 import type {Destination,EdCatalog} from "@/lib/edition-two";
 import {LABELS,MONEY_FIELDS,modules,type Field} from "@/lib/config";
 import {formatDate,formatMoney,formatValue,humanize,slugify,statusLabels} from "@/lib/ui";
@@ -57,6 +57,35 @@ function VariantEditor({value,onChange}:{value:VariantValue[];onChange:(v:Varian
  </div>)}
  <button className="button btn-outline" type="button" onClick={()=>onChange([...value,{label:"",sku:"",price:"",inventory:"0"}])}>افزودن تنوع <Icon name="plus" size={16}/></button>
  <small className="field-help">اگر محصول رنگ یا سایز متفاوت ندارد، این بخش را خالی بگذار.</small>
+ </div>;
+}
+function CommerceVisualPreview({section,values}:{section:string;values:Record<string,unknown>}){
+ const name=String(values.name||values.title||"نام محصول");
+ const cover=String(values.coverUrl||values.imageUrl||"");
+ const price=Number(values.price||0);
+ const compare=Number(values.comparePrice||0);
+ return <section className="ed2-merch-preview" aria-label="پیش‌نمایش محتوای فروشگاه">
+  <div className="ed2-merch-preview-copy"><span>پیش‌نمایش در فروشگاه</span>
+   <small>با تغییر اطلاعات، ظاهر محصول یا کالکشن همین‌جا به‌روز می‌شود.</small></div>
+  <div className="ed2-merch-preview-card">
+   <div className="ed2-merch-preview-image">{cover?<img src={cover} alt="پیش‌نمایش تصویر"/>:<Icon name="image" size={25}/>}</div>
+   <div><strong>{name}</strong>{section==="products"&&<p>
+     {compare>price&&price>=0&&<s>{formatMoney(compare)}</s>}
+     <b>{formatMoney(price)}</b>
+   </p>}</div>
+  </div>
+ </section>;
+}
+function GalleryVisual({value,onChange,catalog}:{value:string;onChange:(s:string)=>void;catalog:EdCatalog}){
+ const photos=value.split("\\n").map(x=>x.trim()).filter(Boolean);
+ return <div className="ed2-gallery-editor">
+  <div className="ed2-gallery-photos">{photos.map((url,i)=><div key={i}>
+   <img src={url} alt={"تصویر گالری "+(i+1)}/>
+   <button type="button" title="حذف تصویر" aria-label={"حذف تصویر "+(i+1)} onClick={()=>
+    onChange(photos.filter((_,index)=>index!==i).join("\\n"))}>×</button>
+  </div>)}</div>
+  <MediaField label="افزودن عکس از کتابخانه تصاویر" value="" catalog={catalog}
+   onChange={url=>onChange([...photos,url].join("\\n"))}/>
  </div>;
 }
 function record(value:unknown):Record<string,unknown>{
@@ -169,17 +198,20 @@ function Editor({section,item,onClose,onSuccess,categories,edCatalog}:{section:s
  return <ModalPortal onClose={onClose} variant="drawer"><section className="editor-panel" role="dialog" aria-modal="true" aria-labelledby="editor-title">
   <header className="editor-header"><div><span className="section-overline">{mod.title}</span><h2 id="editor-title">{item?`مشاهده و ویرایش ${mod.plural}`:`ایجاد ${mod.plural} جدید`}</h2></div><button className="icon-button" aria-label="بستن" data-dialog-initial-focus onClick={onClose}><Icon name="x" size={21}/></button></header>
   {item&&(section==="orders"||section==="reviews")&&<nav className="editor-tabs" aria-label="بخش‌های جزئیات"><button className={tab==="details"?"active":""} onClick={()=>setTab("details")}>{section==="orders"?"جزئیات سفارش":"جزئیات"}</button><button className={tab==="edit"?"active":""} onClick={()=>setTab("edit")}>{section==="orders"?"مدیریت وضعیت":"مدیریت"}</button></nav>}
-  {tab==="details"&&item?<div className="editor-body details-body">{section==="orders"?<OrderDetails item={item}/>:<dl>{Object.entries(item).map(([key,val])=><div key={key}><dt>{LABELS[key]||key}</dt><dd>{Array.isArray(val)?`${val.length} مورد`:typeof val==="object"?JSON.stringify(val):MONEY_FIELDS.has(key)&&typeof val==="number"?formatMoney(val):humanize(val)}</dd></div>)}</dl>}</div>:readonly?<div className="editor-body"><p className="note-box">این اطلاعات صرفاً جهت مشاهده هستند و از این پنل قابل تغییر نیستند.</p></div>:<form onSubmit={save} className="editor-form"><div className="editor-body"><div className="editor-grid">{fields.map(field=><div className={"field-group "+(["description","body","summary","notes","variants","gallery","seoDescription"].includes(field.key)?"wide":"")} key={field.key}>
+  {tab==="details"&&item?<div className="editor-body details-body">{section==="orders"?<OrderDetails item={item}/>:<dl>{Object.entries(item).map(([key,val])=><div key={key}><dt>{LABELS[key]||key}</dt><dd>{Array.isArray(val)?`${val.length} مورد`:typeof val==="object"?JSON.stringify(val):MONEY_FIELDS.has(key)&&typeof val==="number"?formatMoney(val):humanize(val)}</dd></div>)}</dl>}</div>:readonly?<div className="editor-body"><p className="note-box">این اطلاعات صرفاً جهت مشاهده هستند و از این پنل قابل تغییر نیستند.</p></div>:<form onSubmit={save} className="editor-form"><div className="editor-body">{["products","categories"].includes(section)&&<CommerceVisualPreview section={section} values={values}/>}<div className="editor-grid">{fields.map(field=><div className={"field-group "+(["description","body","summary","notes","variants","gallery","seoDescription"].includes(field.key)?"wide":"")} key={field.key}>
      {field.type==="checkbox"?<label className="checkbox-label"><input type="checkbox" checked={Boolean(values[field.key])} onChange={e=>change(field.key,e.target.checked)}/><span>{field.label}</span></label>:<><label htmlFor={"field-"+field.key}>{field.label}{field.required&&<em> *</em>}</label>
       {field.key==="variants"?<VariantEditor value={(values.variants as VariantValue[])||[]} onChange={v=>change("variants",v)}/>
+      :field.key==="gallery"?<GalleryVisual value={String(values.gallery||"")} onChange={x=>change("gallery",x)} catalog={edCatalog}/>
+      :field.type==="image"&&["products","categories","articles","banners"].includes(section)?
+       <MediaField label="انتخاب تصویر" value={String(values[field.key]||"")} onChange={x=>change(field.key,x)} catalog={edCatalog}/>
       :field.type==="destination"?<DestinationPicker label="مقصد دکمه" value={(values[field.key] as Destination)||{kind:"none"}} onChange={dest=>change(field.key,dest)} catalog={edCatalog}/>
       :field.type==="textarea"?<textarea id={"field-"+field.key} value={String(values[field.key]??"")} rows={field.key==="body"?9:field.key==="description"?5:3} onChange={e=>change(field.key,e.target.value)} placeholder={field.help||""}/>
       :field.key==="categoryId"?<select id={"field-"+field.key} value={String(values[field.key]??"")} onChange={e=>change(field.key,e.target.value)}><option value="">بدون دسته‌بندی</option>{categories.map(c=><option key={c.id} value={c.id}>{String(c.name)}</option>)}</select>
       :field.type==="select"?<select id={"field-"+field.key} value={String(values[field.key] ?? field.options?.[0]?.value ?? "")} onChange={e=>change(field.key,e.target.value)}>{field.options?.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select>
       :<input id={"field-"+field.key} type={field.type==="number"?"number":field.type==="date"?"date":"text"} min={field.min} step={field.type==="number"?1:undefined} required={field.required} dir={field.key==="slug"||field.key==="sku"||field.type==="image"?"ltr":undefined} value={String(values[field.key]??"")} onChange={e=>change(field.key,e.target.value)} placeholder={field.key==="slug"?"example-product":field.type==="image"?"https://...":undefined}/>}
       {field.help&&field.key!=="variants"&&<small className="field-help">{field.help}</small>}
-      {field.type==="image"&&<div className="image-field"><label className="upload-button">{uploading===field.key?"در حال آپلود...":"بارگذاری تصویر"}<input type="file" hidden accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploading)} onChange={e=>{const f=e.target.files?.[0];if(f)void uploadImage(f,field.key);e.target.value=""}}/></label>{Boolean(values[field.key])&&<span className="image-url-notice">آدرس تصویر ثبت شده است</span>}</div>}
-      {field.key==="gallery"&&<div className="image-field"><label className="upload-button">{uploading==="gallery"?"در حال آپلود...":"افزودن عکس به گالری"}<input type="file" hidden accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploading)} onChange={e=>{const f=e.target.files?.[0];if(f)void uploadImage(f,"gallery");e.target.value=""}}/></label></div>}
+      {field.type==="image"&&!["products","categories","articles","banners"].includes(section)&&<div className="image-field"><label className="upload-button">{uploading===field.key?"در حال آپلود...":"بارگذاری تصویر"}<input type="file" hidden accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploading)} onChange={e=>{const f=e.target.files?.[0];if(f)void uploadImage(f,field.key);e.target.value=""}}/></label>{Boolean(values[field.key])&&<span className="image-url-notice">آدرس تصویر ثبت شده است</span>}</div>}
+      {field.key==="gallery"&&false&&<div className="image-field"><label className="upload-button">{uploading==="gallery"?"در حال آپلود...":"افزودن عکس به گالری"}<input type="file" hidden accept="image/png,image/jpeg,image/webp" disabled={Boolean(uploading)} onChange={e=>{const f=e.target.files?.[0];if(f)void uploadImage(f,"gallery");e.target.value=""}}/></label></div>}
       </>}
      </div>)}</div>{error&&<div role="alert" className="error-box">{error}</div>}
      {section==="products"&&<p className="note-box"><Icon name="check" size={16}/> حذف محصول به شکل آرشیو است؛ سوابق سفارش‌ها حفظ می‌شوند.</p>}
@@ -198,7 +230,7 @@ export function ModuleManager({section}:{section:string}){
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const t=setTimeout(()=>{setPage(1);setTerm(search)},300);return()=>clearTimeout(t)},[search]);
  useEffect(()=>{if(section==="products")adminFetch("/api/admin/categories?limit=250").then(r=>r.json()).then(d=>setCategories(d.items||[])).catch(()=>{})},[section]);
- useEffect(()=>{if(section==="banners")adminFetch("/api/admin/edition-2").then(r=>r.json()).then(d=>setEdCatalog(d.catalog||{products:[],categories:[],articles:[],pages:[]})).catch(()=>{})},[section]);
+ useEffect(()=>{if(["banners","products","categories","articles"].includes(section))adminFetch("/api/admin/edition-2").then(r=>r.json()).then(d=>setEdCatalog(d.catalog||{products:[],categories:[],articles:[],pages:[]})).catch(()=>{})},[section]);
  useEffect(()=>{if(notice){const t=setTimeout(()=>setNotice(""),4500);return()=>clearTimeout(t)}},[notice]);
  async function remove(){if(!deleting)return;setBusyDelete(true);setError("");try{const res=await adminFetch(`/api/admin/${section}/${deleting.id}`,{method:"DELETE"});const body=await res.json();if(!res.ok)throw Error(body.error||"حذف ناموفق بود");
    setDeleting(null);setNotice(section==="products"?"محصول آرشیو شد":"رکورد حذف شد");void load();}
