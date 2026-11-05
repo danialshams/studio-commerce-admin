@@ -70,6 +70,9 @@ export async function POST(req:NextRequest){
  for(const id of config.featured.productIds){
   if(!ids.product.has(id))return NextResponse.json({error:"یکی از محصولات منتخب دیگر فعال نیست."},{status:400});
  }
+ for(const id of config.journal.articleIds){
+  if(!ids.article.has(id))return NextResponse.json({error:"یکی از مقالات منتخب منتشر نشده یا حذف شده است."},{status:400});
+ }
  for(const x of config.categories.items){
   if(!ids.category.has(x.categoryId))return NextResponse.json({error:"یکی از کالکشن‌ها حذف شده است."},{status:400});
  }
