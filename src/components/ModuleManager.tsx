@@ -3,6 +3,8 @@ import {adminFetch} from "@/lib/demo-api";
 import {useCallback,useEffect,useState,type FormEvent} from "react";
 import {Icon} from "@/components/Icon";
 import {ModalPortal} from "@/components/ModalPortal";
+import {DestinationPicker} from "@/components/EditionTwoControls";
+import type {Destination,EdCatalog} from "@/lib/edition-two";
 import {LABELS,MONEY_FIELDS,modules,type Field} from "@/lib/config";
 import {formatDate,formatMoney,formatValue,humanize,slugify,statusLabels} from "@/lib/ui";
 
@@ -13,6 +15,7 @@ function initFields(fields:Field[],item?:RecordItem){const value:Record<string,u
  for(const field of fields){const current=item?.[field.key];
    if(field.key==="variants")value.variants=Array.isArray(current)?current.map((v:Record<string,unknown>)=>({label:String(v.label||""),sku:String(v.sku||""),price:v.price==null?"":String(v.price),inventory:String(v.inventory??0)})):[];
    else if(field.key==="gallery")value.gallery=Array.isArray(current)?current.join("\n"):"";
+   else if(field.type==="destination")value[field.key]=current&&typeof current==="object"?current:{kind:"none"};
    else if(field.type==="date")value[field.key]=current?String(current).slice(0,10):"";
    else if(field.type==="checkbox")value[field.key]=current??(field.key==="enabled"||field.key==="active");
    else if(field.type==="number")value[field.key]=current??"";
@@ -21,6 +24,7 @@ function initFields(fields:Field[],item?:RecordItem){const value:Record<string,u
 }
 function payload(fields:Field[],values:Record<string,unknown>){const result:Record<string,unknown>={};
  for(const field of fields){const v=values[field.key];
+  if(field.type==="destination"){result[field.key]=v&&typeof v==="object"?v:{kind:"none"};continue;}
   if(field.key==="gallery"){result.gallery=String(v||"").split("\n").map(x=>x.trim()).filter(Boolean);continue;}
   if(field.key==="variants"){
     result.variants=(Array.isArray(v)?v:[]).map((row:VariantValue)=>({label:row.label.trim(),sku:row.sku.trim()||null,price:row.price===""?null:Number(row.price),inventory:Number(row.inventory||0),attributes:{}}));continue;}
@@ -145,7 +149,7 @@ function OrderDetails({item}:{item:RecordItem}){
   {Boolean(item.note)&&<section className="order-detail-section"><h3>یادداشت سفارش</h3><p className="order-note">{String(item.note)}</p></section>}
  </div>;
 }
-function Editor({section,item,onClose,onSuccess,categories}:{section:string;item:RecordItem|null;onClose:()=>void;onSuccess:()=>void;categories:RecordItem[]}){
+function Editor({section,item,onClose,onSuccess,categories,edCatalog}:{section:string;item:RecordItem|null;onClose:()=>void;onSuccess:()=>void;categories:RecordItem[];edCatalog:EdCatalog}){
  const mod=modules[section],fields=mod.fields;
  const [values,setValues]=useState<Record<string,unknown>>(()=>initFields(fields,item||undefined));
  const [saving,setSaving]=useState(false),[uploading,setUploading]=useState<string|null>(null),[error,setError]=useState("");
@@ -168,6 +172,7 @@ function Editor({section,item,onClose,onSuccess,categories}:{section:string;item
   {tab==="details"&&item?<div className="editor-body details-body">{section==="orders"?<OrderDetails item={item}/>:<dl>{Object.entries(item).map(([key,val])=><div key={key}><dt>{LABELS[key]||key}</dt><dd>{Array.isArray(val)?`${val.length} مورد`:typeof val==="object"?JSON.stringify(val):MONEY_FIELDS.has(key)&&typeof val==="number"?formatMoney(val):humanize(val)}</dd></div>)}</dl>}</div>:readonly?<div className="editor-body"><p className="note-box">این اطلاعات صرفاً جهت مشاهده هستند و از این پنل قابل تغییر نیستند.</p></div>:<form onSubmit={save} className="editor-form"><div className="editor-body"><div className="editor-grid">{fields.map(field=><div className={"field-group "+(["description","body","summary","notes","variants","gallery","seoDescription"].includes(field.key)?"wide":"")} key={field.key}>
      {field.type==="checkbox"?<label className="checkbox-label"><input type="checkbox" checked={Boolean(values[field.key])} onChange={e=>change(field.key,e.target.checked)}/><span>{field.label}</span></label>:<><label htmlFor={"field-"+field.key}>{field.label}{field.required&&<em> *</em>}</label>
       {field.key==="variants"?<VariantEditor value={(values.variants as VariantValue[])||[]} onChange={v=>change("variants",v)}/>
+      :field.type==="destination"?<DestinationPicker label="مقصد دکمه" value={(values[field.key] as Destination)||{kind:"none"}} onChange={dest=>change(field.key,dest)} catalog={edCatalog}/>
       :field.type==="textarea"?<textarea id={"field-"+field.key} value={String(values[field.key]??"")} rows={field.key==="body"?9:field.key==="description"?5:3} onChange={e=>change(field.key,e.target.value)} placeholder={field.help||""}/>
       :field.key==="categoryId"?<select id={"field-"+field.key} value={String(values[field.key]??"")} onChange={e=>change(field.key,e.target.value)}><option value="">بدون دسته‌بندی</option>{categories.map(c=><option key={c.id} value={c.id}>{String(c.name)}</option>)}</select>
       :field.type==="select"?<select id={"field-"+field.key} value={String(values[field.key] ?? field.options?.[0]?.value ?? "")} onChange={e=>change(field.key,e.target.value)}>{field.options?.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select>
@@ -186,12 +191,14 @@ export function ModuleManager({section}:{section:string}){
  const [data,setData]=useState<ListResponse|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [search,setSearch]=useState(""),[term,setTerm]=useState(""),[page,setPage]=useState(1),[editing,setEditing]=useState<RecordItem|null|"create">(null);
  const [deleting,setDeleting]=useState<RecordItem|null>(null),[busyDelete,setBusyDelete]=useState(false),[categories,setCategories]=useState<RecordItem[]>([]);
+ const [edCatalog,setEdCatalog]=useState<EdCatalog>({products:[],categories:[],articles:[],pages:[]});
  const load=useCallback(async()=>{setLoading(true);setError("");try{const resp=await adminFetch(`/api/admin/${section}?page=${page}&limit=15&q=${encodeURIComponent(term)}`);
     const body=await resp.json();if(!resp.ok)throw Error(body.error||"خطای بارگذاری");setData(body);}
     catch(e){setError(e instanceof Error?e.message:"خطا در دریافت اطلاعات");}finally{setLoading(false)}},[section,page,term]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const t=setTimeout(()=>{setPage(1);setTerm(search)},300);return()=>clearTimeout(t)},[search]);
  useEffect(()=>{if(section==="products")adminFetch("/api/admin/categories?limit=250").then(r=>r.json()).then(d=>setCategories(d.items||[])).catch(()=>{})},[section]);
+ useEffect(()=>{if(section==="banners")adminFetch("/api/admin/edition-2").then(r=>r.json()).then(d=>setEdCatalog(d.catalog||{products:[],categories:[],articles:[],pages:[]})).catch(()=>{})},[section]);
  useEffect(()=>{if(notice){const t=setTimeout(()=>setNotice(""),4500);return()=>clearTimeout(t)}},[notice]);
  async function remove(){if(!deleting)return;setBusyDelete(true);setError("");try{const res=await adminFetch(`/api/admin/${section}/${deleting.id}`,{method:"DELETE"});const body=await res.json();if(!res.ok)throw Error(body.error||"حذف ناموفق بود");
    setDeleting(null);setNotice(section==="products"?"محصول آرشیو شد":"رکورد حذف شد");void load();}
@@ -217,7 +224,7 @@ export function ModuleManager({section}:{section:string}){
   {!loading&&!rows.length&&<div className="empty-state"><span className="empty-icon"><Icon name={mod.icon} size={27}/></span><h3>{term?"نتیجه‌ای پیدا نشد":`هنوز ${mod.plural} ثبت نشده است`}</h3><p>{term?"عبارت دیگری جست‌وجو کن.":"از دکمه افزودن بالا برای ثبت اولین مورد استفاده کن."}</p>{!mod.readonly&&!term&&<button className="button btn-primary" onClick={()=>setEditing("create")}>افزودن {mod.plural}<Icon name="plus" size={17}/></button>}</div>}
   <div className="table-pagination"><button className="button btn-outline small-btn" disabled={page<=1} onClick={()=>setPage(page-1)}>قبلی</button><span>صفحه {formatValue(page)} از {formatValue(Math.max(1,data?.pages||1))}</span><button className="button btn-outline small-btn" disabled={!data||page>=data.pages} onClick={()=>setPage(page+1)}>بعدی</button></div>
   </section>
-  {editing&&<Editor key={editing==="create"?"create":editing.id} section={section} item={editing==="create"?null:editing} categories={categories} onClose={()=>setEditing(null)} onSuccess={done}/>}
+  {editing&&<Editor key={editing==="create"?"create":editing.id} section={section} item={editing==="create"?null:editing} categories={categories} edCatalog={edCatalog} onClose={()=>setEditing(null)} onSuccess={done}/>}
   {deleting&&<ModalPortal onClose={()=>{if(!busyDelete)setDeleting(null)}} variant="confirm"><div role="alertdialog" aria-modal="true" aria-labelledby="delete-title" className="confirm-card" aria-describedby="delete-description"><span className="confirm-icon"><Icon name="alert" size={24}/></span><h2 id="delete-title">{section==="products"?"آرشیو محصول":"حذف این مورد"}</h2><p id="delete-description">{section==="products"?"محصول از فروشگاه پنهان می‌شود، ولی در پنل باقی می‌ماند و سوابق سفارش حفظ می‌شود.":"این عملیات قابل بازگشت نیست. مطمئن هستی؟"}</p><div className="confirm-actions"><button className="button btn-outline" data-dialog-initial-focus onClick={()=>setDeleting(null)}>انصراف</button><button className="button btn-danger" disabled={busyDelete} onClick={remove}>{busyDelete?"در حال انجام...":section==="products"?"آرشیو محصول":"حذف مورد"}</button></div></div></ModalPortal>}
  </div>;
 }
