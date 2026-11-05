@@ -8,6 +8,7 @@ const money=z.coerce.number().int().min(0).max(2_000_000_000);
 const units=z.coerce.number().int().min(0).max(1_000_000);
 const slug=z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120);
 const optionalUrl=z.union([z.url().startsWith("https://").max(2000),z.literal("")]).nullable().optional();
+const destination=z.object({kind:z.enum(["none","home","products","product","category","page","article","external"]),id:z.string().max(150).optional(),url:z.string().max(2000).optional()}).refine(x=>x.kind!=="external"||Boolean(x.url?.startsWith("https://")),"آدرس خارجی باید HTTPS باشد");
 const yes=z.boolean().optional();
 const status=z.enum(["DRAFT","ACTIVE","ARCHIVED"]);
 const variant=z.object({label:text.min(1),sku:text.nullable().optional(),price:money.nullable().optional(),inventory:units,attributes:z.record(z.string(),z.string()).optional()});
@@ -26,7 +27,7 @@ const schemas={
  pages:z.object({title:text.min(1),slug,body:longText.default(""),seoTitle:text.nullable().optional(),seoDescription:text.nullable().optional(),status:z.enum(["DRAFT","PUBLISHED"]).default("DRAFT")}),
  articles:z.object({title:text.min(1),slug,summary:longText.default(""),body:longText.default(""),coverUrl:optionalUrl,
    seoTitle:text.nullable().optional(),seoDescription:text.nullable().optional(),status:z.enum(["DRAFT","PUBLISHED"]).default("DRAFT")}),
- banners:z.object({title:text.min(1),subtitle:text.default(""),imageUrl:optionalUrl,linkUrl:optionalUrl,position:units.default(0),active:z.boolean().default(true)}),
+ banners:z.object({title:text.min(1),subtitle:text.default(""),imageUrl:optionalUrl,linkUrl:optionalUrl,target:destination.nullable().optional(),position:units.default(0),active:z.boolean().default(true)}),
  services:z.object({title:text.min(1),slug,description:longText.default(""),imageUrl:optionalUrl,active:z.boolean().default(true)}),
  projects:z.object({title:text.min(1),description:longText.default(""),imageUrl:optionalUrl,linkUrl:optionalUrl,active:z.boolean().default(true)})
 } as const;
