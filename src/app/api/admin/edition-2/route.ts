@@ -19,10 +19,15 @@ export async function GET(req:NextRequest){
   db.article.findMany({where:{status:"PUBLISHED"},select:{id:true,title:true,slug:true,coverUrl:true},take:100}),
   db.page.findMany({where:{status:"PUBLISHED"},select:{id:true,title:true,slug:true},take:100})
  ]);
+ const initial=structuredClone(editionTwoDefaults);
+ // New stores should start with their own real categories, not demo slugs.
+ initial.categories.items=categories.slice(0,4).map(c=>({categoryId:c.id,imageUrl:c.imageUrl||undefined}));
+ initial.hero[2].target=categories[0]?{kind:"category",id:categories[0].id}:{kind:"products"};
+ initial.campaign.target=categories[0]?{kind:"category",id:categories[0].id}:{kind:"products"};
  const published=editionTwoSchema.safeParse(settings.editorialConfig);
  const draft=editionTwoSchema.safeParse(settings.editorialDraft);
  return NextResponse.json({published:published.success?published.data:null,
-  draft:draft.success?draft.data:published.success?published.data:editionTwoDefaults,
+  draft:draft.success?draft.data:published.success?published.data:initial,
   hasUnpublishedDraft:draft.success,
   updatedAt:settings.updatedAt,
   catalog:{products:products.map(x=>({id:x.id,name:x.name,slug:x.slug,imageUrl:x.coverUrl||""})),
