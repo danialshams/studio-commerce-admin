@@ -256,6 +256,7 @@ model Article {
 }
 model Banner {
   id String @id @default(cuid())
+  target Json?
   title String
   subtitle String @default("")
   imageUrl String?
