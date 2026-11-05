@@ -454,3 +454,21 @@ body:has(.ed2-admin) .note-box{background:#f6f1e9;border-color:#e7ddcf;color:#81
 .ed2-preview-footer-columns span{font-size:9px;color:#85796b}
 .ed2-preview-screen.is-mobile .ed2-preview-footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 @media(max-width:640px){.ed2-preview-footer-columns{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}}
+
+/* Edition 02 section navigator — never squeeze all labels into a single row. */
+.ed2-part-selector{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:8px;overflow:visible;padding:16px;
+ border-bottom:1px solid var(--ed2-line);background:#fffefa;
+}
+.ed2-part-selector button{
+ display:flex;align-items:center;justify-content:center;text-align:center;
+ min-width:0;width:100%;min-height:43px;padding:10px 8px;
+ white-space:normal;overflow-wrap:normal;line-height:1.6;
+ font-size:11.5px;border-radius:7px;font-weight:650;
+}
+.ed2-part-selector button:focus-visible{outline:2px solid #a48b6c;outline-offset:2px}
+@media(max-width:640px){
+ .ed2-part-selector{position:static;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:14px}
+ .ed2-part-selector button{min-height:46px;padding:10px;font-size:12px}
+}
