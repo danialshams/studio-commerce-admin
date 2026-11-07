@@ -18,6 +18,8 @@ const register=async(label)=>{
 const a=await register('a'),b=await register('b');
 const contact=must(await api('/api/data/contacts',{method:'POST',cookie:a,body:{name:'Client A',phone:'09120000001',status:'lead'}}),201,'create A contact').item;
 assert.ok(contact.id);
+must(await api('/api/data/deals',{method:'POST',cookie:a,body:{title:'Negative deal',amount:-200}}),400,'invalid negative amount');
+must(await api('/api/data/tasks',{method:'POST',cookie:a,body:{title:'Bad date',due_at:'2026-02-30'}}),400,'invalid date');
 const aList=must(await api('/api/data/contacts',{cookie:a}),200,'A list');assert.ok(aList.items.some(x=>x.id===contact.id));
 const bList=must(await api('/api/data/contacts',{cookie:b}),200,'B list');assert.ok(!bList.items.some(x=>x.id===contact.id));
 must(await api('/api/data/contacts',{method:'PATCH',cookie:b,body:{id:contact.id,name:'Attacked'}}),404,'cross tenant patch');
