@@ -35,3 +35,10 @@
 .demo-banner p{font-size:11px;color:#71809a;line-height:1.95;margin:7px 0 0}
 .demo-banner .primary-btn{flex-shrink:0}
 @media(max-width:650px){.demo-banner{align-items:stretch;flex-direction:column}.demo-banner .primary-btn{width:100%}}
+
+/* Public showroom — visually distinct from private authenticated workspaces. */
+.showcase-ribbon{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 19px;margin-bottom:20px;border:1px solid #dbe5fc;border-radius:14px;background:linear-gradient(115deg,#f4f7ff,#fff)}
+.showcase-ribbon p{font-size:11px;line-height:1.9;margin:0;color:#687996}
+.showcase-badge{display:inline-flex;gap:8px;align-items:center;flex-shrink:0;background:#e7edff;color:#3158bb;border-radius:20px;padding:9px 13px;font-size:11px;font-weight:750}
+.notification-item:disabled{cursor:default;opacity:1}
+@media(max-width:700px){.showcase-ribbon{align-items:flex-start;flex-direction:column;padding:14px}.showcase-badge{font-size:10px}}
