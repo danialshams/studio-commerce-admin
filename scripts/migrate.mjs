@@ -17,7 +17,7 @@ try {
  await client.query('BEGIN');
  await client.query("SET LOCAL lock_timeout = '20s'");
  await client.query('SELECT pg_advisory_xact_lock(537181293)');
- for (const name of ['database/schema.sql','database/003_integrations.sql','database/004_demo_data.sql']) {
+ for (const name of ['database/schema.sql','database/003_integrations.sql','database/004_demo_data.sql','database/005_public_showcase.sql']) {
   const sql=readFileSync(resolve(process.cwd(),name),'utf8');
   await client.query(sql);
   console.log('Applied additive schema: '+name);
