@@ -9,6 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/003_integrations.sql:/docker-entrypoint-initdb.d/02-integrations.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U crm -d daira_crm"]
       interval: 5s
