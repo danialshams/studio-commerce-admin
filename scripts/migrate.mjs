@@ -8,7 +8,10 @@ if (!process.env.DATABASE_URL) {
  console.error('DATABASE_URL is required for migrations.');
  process.exit(1);
 }
-const client=new pg.Client({connectionString:process.env.DATABASE_URL,connectionTimeoutMillis:15000});
+const url=new URL(process.env.DATABASE_URL);
+if(['prefer','require','verify-ca'].includes(url.searchParams.get('sslmode')||''))
+ url.searchParams.set('sslmode','verify-full');
+const client=new pg.Client({connectionString:url.toString(),connectionTimeoutMillis:15000});
 try {
  await client.connect();
  await client.query('BEGIN');
