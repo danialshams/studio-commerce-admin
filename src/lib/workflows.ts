@@ -1,6 +1,6 @@
 import type {PoolClient} from 'pg';
 type Event='contacts.created'|'deals.won'|'tickets.created'|'contracts.signed';
-export async function runWorkflows(c:PoolClient,orgId:string,userId:string,event:Event,detail:{id:string;title:string;contactId?:string|null}){
+export async function runWorkflows(c:PoolClient,orgId:string,userId:string|null,event:Event,detail:{id:string;title:string;contactId?:string|null}){
  const rules=await c.query('SELECT id,title,action,payload FROM automation_rules WHERE org_id=$1 AND enabled=true AND event=$2',[orgId,event]);
  for(const rule of rules.rows.slice(0,30)){
   if(rule.action==='notification'){
