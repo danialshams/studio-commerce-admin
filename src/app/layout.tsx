@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import ServiceWorker from '@/components/ServiceWorker';
 export const metadata: Metadata={title:'دایرا CRM | مدیریت ارتباط با مشتری',description:'نرم‌افزار مدیریت مشتریان و فروش دایرا',manifest:'/manifest.webmanifest'};
-export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="fa" dir="rtl"><body>{children}</body></html> }
+export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="fa" dir="rtl"><body>{children}<ServiceWorker/></body></html> }
