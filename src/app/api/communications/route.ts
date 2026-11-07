@@ -7,7 +7,7 @@ import {processOutbox} from '@/lib/outbox';
 
 export async function GET(){
  const s=await requireSession();if(!s)return fail('ورود لازم است.',401);
- if(!authorize(s,'contacts',true))return fail('مجوز ارسال پیام ندارید.',403);
+ if(!authorize(s,'contacts'))return fail('مجوز ارسال پیام ندارید.',403);
  const rows=await db().query(`SELECT id,contact_id,channel,recipient,subject,body,status,attempts,
    last_error,created_at,sent_at FROM message_outbox WHERE org_id=$1
    ORDER BY created_at DESC LIMIT 100`,[s.orgId]);
