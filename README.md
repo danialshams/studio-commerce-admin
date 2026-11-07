@@ -2,6 +2,16 @@
 
 Persian RTL, multi-tenant CRM, with Next.js 16, PostgreSQL and native Docker hosting. CRM is published from the **daira-crm** branch in the shared Git repository, **not** its unrelated `main` branch.
 
+## Public, no-login showcase
+
+The site's public home URL now opens the full CRM dashboard **without a login prompt**. Anonymous visitors receive a **read-only** session scoped exclusively to an isolated fictional organization, never an existing customer's organization. The private login endpoint and original account authentication code remain intact for future activation.
+
+The build prepares that isolated organization once using `npm run seed:showcase`, after the idempotent migrations. The public dataset contains **84 fictional contacts**, **76 opportunities**, **92 tasks**, **64 invoices/quotes**, **38 contracts**, **58 support tickets**, **88 customer interactions**, **18 disabled workflow rules**, **62 notifications**, **34 draft messages**, **20 unsigned draft signature requests**, a fictional 10-person team, and related support comments/audit history. Every contact uses a reserved `@daira.example` address and non-dialable phone placeholder. Message queues remain draft-only, consent is false, automation rules are disabled and scheduled task reminders explicitly exclude demo tasks.
+
+**Security**: Private account cookies still work. Guests can read only the reserved demo tenant; middleware requires a valid human session for *every* non-auth, non-webhook, non-cron mutation. UI hides all editing and sending controls for public guests, including team management and password settings. Backend permission checks remain active. Cron and webhook endpoints retain separate signed/secret protections. Do not switch this public fallback to the real organization ID.
+
+To restore a login-gated homepage later, remove the guest fallback from `src/lib/access.ts`, change `src/app/page.tsx` to redirect to `/login`, and restore private tab visibility rules. Do not delete the real users or existing data during that transition.
+
 ## Fictional sample data (demo)
 
 Each organization has its own isolated database records. The **owner** can open **Settings → داده‌های نمایشی CRM → افزودن داده‌های دمو +** to populate the workspace once. New account registration has an explicitly labeled, preselected checkbox that can be unchecked to start empty. Existing records are never overwritten.
