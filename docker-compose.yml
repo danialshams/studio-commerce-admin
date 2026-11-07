@@ -11,6 +11,7 @@ services:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./database/003_integrations.sql:/docker-entrypoint-initdb.d/02-integrations.sql:ro
       - ./database/004_demo_data.sql:/docker-entrypoint-initdb.d/03-demo.sql:ro
+      - ./database/005_public_showcase.sql:/docker-entrypoint-initdb.d/04-showcase.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U crm -d daira_crm"]
       interval: 5s
