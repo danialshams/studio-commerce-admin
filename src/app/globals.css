@@ -20,3 +20,12 @@
 .provider-status span{border-radius:10px;background:#f1f5fb;padding:9px 11px;font-size:11px;color:#576a84}
 .integration-grid a.secondary-btn{text-decoration:none;display:inline-flex;margin-top:10px}
 @media(max-width:900px){.integration-grid{grid-template-columns:1fr}}
+
+/* Sample data onboarding is explicitly optional and separated from live records. */
+.demo-opt-in{display:flex!important;align-items:flex-start!important;flex-direction:row!important;gap:12px!important;cursor:pointer;padding:12px 14px;border:1px solid #e1e7f1;border-radius:12px;background:#f7f9fd}
+.demo-opt-in input[type="checkbox"]{width:18px;height:18px;min-width:18px;min-height:18px;accent-color:#3f69df;margin:3px 0 0;padding:0;cursor:pointer}
+.demo-opt-in span{display:grid;gap:5px;flex:1}
+.demo-opt-in strong{font-size:12px;color:#243653}
+.demo-opt-in small{font-size:10px;line-height:1.9;color:#708098}
+.demo-settings .primary-btn{margin-top:12px}
+.demo-settings .info-note{line-height:2}
