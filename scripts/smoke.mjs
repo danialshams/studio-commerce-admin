@@ -42,6 +42,18 @@ const token=new URL(invite.inviteUrl).searchParams.get('token');assert.ok(token)
 const accepted=await api('/api/auth/accept-invite',{method:'POST',body:{token,name:'Read Only',password:passwords.viewer}});must(accepted,200,'accept invite');assert.ok(accepted.cookie);
 must(await api('/api/data/contacts',{method:'POST',cookie:accepted.cookie,body:{name:'Illicit create'}}),403,'viewer write rejected');
 must(await api('/api/data/contacts',{cookie:accepted.cookie}),200,'viewer read allowed');
+const viewerAudit=must(await api('/api/data/activities',{cookie:accepted.cookie}),200,'viewer audit feed');
+assert.ok(viewerAudit.items.every(x=>x.entity!=='automation_rules'),'viewer cannot see workflow audit events');
+const supportInvite=must(await api('/api/team',{method:'POST',cookie:a,body:{email:`support-${prefix}@example.test`,role:'support'}}),200,'support invite');
+const supportToken=new URL(supportInvite.inviteUrl).searchParams.get('token');
+const support=await api('/api/auth/accept-invite',{method:'POST',body:{token:supportToken,name:'Support Member',password:passwords.viewer}});
+must(support,200,'support accept');
+const supportSummary=must(await api('/api/summary',{cookie:support.cookie}),200,'support dashboard summary');
+assert.equal(supportSummary.permissions.deals,false,'support has no financial report access');
+assert.equal(supportSummary.deals.total,0,'support cannot see deal counts');
+assert.equal(supportSummary.pipeline.length,0,'support cannot see pipeline');
+const supportAudit=must(await api('/api/data/activities',{cookie:support.cookie}),200,'support audit feed');
+assert.ok(supportAudit.items.every(x=>!['deals','documents','contracts','automation_rules'].includes(x.entity)),'support audit is permission filtered');
 const members=must(await api('/api/team',{cookie:a}),200,'members');const v=members.members.find(x=>x.email===`viewer-${prefix}@example.test`);assert.ok(v);
 must(await api('/api/team',{method:'PATCH',cookie:a,body:{id:v.id,is_active:false}}),200,'disable member');
 must(await api('/api/data/contacts',{cookie:accepted.cookie}),401,'disabled member rejected');
