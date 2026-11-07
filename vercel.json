@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/deliveries",
-      "schedule": "*/30 * * * *"
+      "schedule": "5 6 * * *"
     }
   ],
   "buildCommand": "npm run migrate && npm run build"
