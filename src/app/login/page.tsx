@@ -1,24 +1,8 @@
-"use client";
-import {adminFetch} from "@/lib/demo-api";
-import {useState, type FormEvent} from "react";
-import {useRouter} from "next/navigation";
-import {ArrowLeft,Eye,EyeOff,LockKeyhole,ShieldCheck,Store} from "lucide-react";
+'use client';
+import { useState, type FormEvent } from 'react';
+import { ArrowLeft, ChartNoAxesCombined, ShieldCheck, UsersRound, Layers3, Eye, EyeOff } from 'lucide-react';
 export default function Login(){
- const router=useRouter();const [email,setEmail]=useState(""),[password,setPassword]=useState("");
- const [visible,setVisible]=useState(false),[error,setError]=useState(""),[loading,setLoading]=useState(false);
- async function submit(event:FormEvent){event.preventDefault();setLoading(true);setError("");
-  try{const res=await adminFetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password})});
-    const data=await res.json();if(!res.ok)throw new Error(data.error||"ورود ناموفق بود");router.replace("/admin");router.refresh();}
-  catch(e){setError(e instanceof Error?e.message:"خطایی رخ داد");}finally{setLoading(false);}}
- return <main className="login-screen"><section className="login-panel">
-   <div className="login-logo"><span><Store size={24}/></span>استودیو</div>
-   <div className="login-art"><span><ShieldCheck size={22}/></span><h1>مدیریت سایت، ساده‌تر از همیشه.</h1><p>تمام آنچه برای اداره فروشگاه یا سایت شرکتی نیاز داری؛ در یک فضای خلوت و یکپارچه.</p></div>
-   <div className="login-card"><div className="login-intro"><span className="login-lock"><LockKeyhole size={22}/></span><h2>ورود مدیر سایت</h2><p>برای مدیریت سایت خودت وارد حساب مدیر شو.</p></div>
-     <form onSubmit={submit}><label>ایمیل مدیر<input type="email" name="email" autoComplete="username" inputMode="email" dir="ltr" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@example.com" required/></label>
-      <label>رمز عبور<div className="password-wrapper"><input type={visible?"text":"password"} autoComplete="current-password" dir="ltr" minLength={1} maxLength={256} value={password} onChange={e=>setPassword(e.target.value)} required/>
-        <button type="button" className="icon-button password-toggle" aria-label={visible?"پنهان کردن رمز":"نمایش رمز"} onClick={()=>setVisible(!visible)}>{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>
-      {error&&<div className="error-box" role="alert">{error}</div>}
-      <button disabled={loading} className="primary-button login-submit" type="submit">{loading?"در حال بررسی...":"ورود به پنل"}<ArrowLeft size={17}/></button>
-     </form><p className="login-foot">ورود تنها برای مدیر اصلی سایت فعال است.</p></div>
- </section></main>;
+ const [signup,setSignup]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState(''),[show,setShow]=useState(false);
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError('');setLoading(true);const f=new FormData(e.currentTarget);try{const r=await fetch('/api/auth/'+(signup?'signup':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(f))});const j=await r.json();if(!r.ok)throw new Error(j.error||'عملیات ناموفق بود');window.location.href='/dashboard';}catch(e){setError(e instanceof Error?e.message:'خطای ناشناخته')}finally{setLoading(false)}}
+ return <div className="auth-shell"><section className="auth-intro"><div className="brand brand-light"><span className="brand-mark">D</span><span>DAIRA <small>CRM</small></span></div><div className="auth-promise"><span className="eyebrow">DAIRA / CUSTOMER RELATIONSHIP MANAGEMENT</span><h1>ارتباطات بهتر.<br/><em>فروش هوشمندتر.</em></h1><p>مشتری‌ها، فرصت‌های فروش و پیگیری‌های تیم رو در یک فضای یکپارچه و دقیق مدیریت کن.</p><div className="auth-pills"><span><UsersRound size={17}/> مدیریت مشتریان</span><span><ChartNoAxesCombined size={17}/> قیف فروش</span><span><Layers3 size={17}/> پیگیری‌ها</span></div></div><div className="auth-footer"><ShieldCheck size={17}/> اطلاعات هر مجموعه به‌صورت مستقل نگهداری می‌شود.</div></section><section className="auth-panel"><div className="auth-card"><div className="mobile-auth-brand">DAIRA <b>CRM</b></div><span className="pill-label">{signup?'ایجاد فضای کاری':'خوش اومدی 👋'}</span><h2>{signup?'شروع مدیریت ارتباط با مشتری':'ورود به دایرا CRM'}</h2><p>{signup?'اطلاعاتت رو وارد کن و فضای مدیریت مجموعه رو بساز.':'برای ادامه وارد حساب کاربری‌ات شو.'}</p><form onSubmit={submit} className="form-stack">{signup&&<><label>نام و نام خانوادگی<input name="name" placeholder="مثلاً: علی رضایی" required minLength={2}/></label><label>نام مجموعه<input name="company" placeholder="مثلاً: استودیو دایرا" required minLength={2}/></label></>}<label>ایمیل<input name="email" type="email" placeholder="name@company.com" autoComplete="email" required dir="ltr"/></label><label>رمز عبور<div className="password-wrap"><input name="password" type={show?'text':'password'} placeholder={signup?'حداقل ۱۰ کاراکتر':'رمز عبور'} autoComplete={signup?'new-password':'current-password'} required minLength={signup?10:1}/><button type="button" className="toggle-password" onClick={()=>setShow(x=>!x)} aria-label="نمایش رمز عبور">{show?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></label>{error&&<div className="form-error" role="alert">{error}</div>}<button type="submit" disabled={loading} className="primary-btn wide">{loading?'در حال بررسی...':signup?'ساخت حساب کاربری':'ورود به داشبورد'} <ArrowLeft size={18}/></button></form><div className="auth-switch">{signup?'قبلاً حساب ساختی؟':'هنوز حساب نداری؟'} <button type="button" onClick={()=>{setSignup(x=>!x);setError('')}}>{signup?'وارد شو':'رایگان شروع کن'}</button></div></div><div className="auth-copy">© ۲۰۲۶ دایرا · طراحی و توسعه نرم‌افزار</div></section></div>
 }
