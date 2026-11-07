@@ -29,3 +29,9 @@
 .demo-opt-in small{font-size:10px;line-height:1.9;color:#708098}
 .demo-settings .primary-btn{margin-top:12px}
 .demo-settings .info-note{line-height:2}
+
+.demo-banner{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:20px;background:#f8faff;border-color:#dde6f9}
+.demo-banner strong{font-size:15px;color:#223656}
+.demo-banner p{font-size:11px;color:#71809a;line-height:1.95;margin:7px 0 0}
+.demo-banner .primary-btn{flex-shrink:0}
+@media(max-width:650px){.demo-banner{align-items:stretch;flex-direction:column}.demo-banner .primary-btn{width:100%}}
