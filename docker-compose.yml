@@ -21,6 +21,7 @@ services:
     environment:
       DATABASE_URL: postgres://crm:${POSTGRES_PASSWORD}@db:5432/daira_crm
       SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      CRON_SECRET: ${CRON_SECRET:?Set CRON_SECRET in .env}
     depends_on:
       db: { condition: service_healthy }
 volumes: { postgres_data: {} }

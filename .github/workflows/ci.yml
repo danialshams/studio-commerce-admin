@@ -1,9 +1,9 @@
 name: CRM Quality Checks
 on:
   push:
-    branches: [daira-crm]
+    branches: [daira-crm, daira-crm-dev]
   pull_request:
-    branches: [daira-crm]
+    branches: [daira-crm, daira-crm-dev]
 permissions:
   contents: read
 jobs:

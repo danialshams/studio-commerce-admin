@@ -21,3 +21,10 @@ Responsive Persian CRM for sales pipeline, contacts, tasks, quotations/invoices,
 - Contacts/leads, deals/pipeline, tasks, quotes/invoices: scoped CRUD
 - Audit activity history and notification list (polled every 15s)
 - Dashboard and reports, configurable workspace, CSV export, RTL responsive UI
+
+## Database upgrades and scheduled reminders
+- For an existing database, run `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/002_extended_crm.sql` **before** publishing the new application version. Never reset an existing database during an upgrade.
+- New Docker installs initialize all tables from `database/schema.sql` automatically. Upgrades of existing Docker installs must apply the SQL migration separately.
+- Create a random `CRON_SECRET` (at least 32 characters); call `POST /api/cron/reminders` with `Authorization: Bearer <CRON_SECRET>` from any trusted daily cron scheduler (VPS cron, CI scheduler, or Vercel Cron-compatible service). The endpoint is idempotent per task and day and never depends on a proprietary provider.
+- The CRM has internally triggered notification/task automations. Automatic email/SMS delivery requires selecting and connecting external providers; no email or SMS is silently sent without configuration.
+- Team invitations are secure one-time URLs, valid for 72 hours. The owner must share the link directly until outgoing email delivery is configured.
