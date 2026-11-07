@@ -6,7 +6,7 @@ import { runWorkflows } from '@/lib/workflows';
 type Key='contacts'|'deals'|'tasks'|'documents'|'activities'|'contracts'|'tickets'|'automation_rules'|'interactions';
 type Field={name:string;type:'text'|'money'|'number'|'date'|'foreign'|'enum'|'boolean';max?:number;allowed?:string[]};
 const fields:Record<string,Field[]>={
- contacts:[{name:'name',type:'text',max:180},{name:'company',type:'text',max:180},{name:'email',type:'text',max:255},{name:'phone',type:'text',max:40},{name:'status',type:'enum',allowed:['lead','prospect','customer','inactive']},{name:'source',type:'text',max:100},{name:'tags',type:'text',max:400},{name:'notes',type:'text',max:5000},{name:'score',type:'number'}],
+ contacts:[{name:'name',type:'text',max:180},{name:'company',type:'text',max:180},{name:'email',type:'text',max:255},{name:'phone',type:'text',max:40},{name:'status',type:'enum',allowed:['lead','prospect','customer','inactive']},{name:'source',type:'text',max:100},{name:'tags',type:'text',max:400},{name:'notes',type:'text',max:5000},{name:'score',type:'number'},{name:'delivery_consent',type:'boolean'}],
  deals:[{name:'title',type:'text',max:180},{name:'contact_id',type:'foreign'},{name:'amount',type:'money'},{name:'stage',type:'enum',allowed:['new','qualified','proposal','negotiation','won','lost']},{name:'probability',type:'number'},{name:'expected_at',type:'date'},{name:'notes',type:'text',max:5000},{name:'assignee_id',type:'foreign'}],
  tasks:[{name:'title',type:'text',max:200},{name:'contact_id',type:'foreign'},{name:'deal_id',type:'foreign'},{name:'priority',type:'enum',allowed:['low','normal','high','urgent']},{name:'status',type:'enum',allowed:['todo','doing','done']},{name:'due_at',type:'date'},{name:'notes',type:'text',max:5000},{name:'assignee_id',type:'foreign'}],
  documents:[{name:'number',type:'text',max:40},{name:'title',type:'text',max:200},{name:'kind',type:'enum',allowed:['quote','invoice']},{name:'contact_id',type:'foreign'},{name:'amount',type:'money'},{name:'status',type:'enum',allowed:['draft','sent','accepted','paid','cancelled']},{name:'due_at',type:'date'},{name:'notes',type:'text',max:5000}],
@@ -60,7 +60,7 @@ export async function POST(req:Request,{params}:{params:Promise<{entity:string}>
  const keys=Object.keys(r);const cols=['org_id',...keys];const values=[s.orgId,...Object.values(r)];const marks=cols.map((_,i)=>`$${i+1}`);
  const inserted=await c.query(`INSERT INTO ${e} (${cols.join(',')}) VALUES(${marks.join(',')}) RETURNING *`,values);
  const item=inserted.rows[0];await c.query('INSERT INTO activities(org_id,user_id,entity,entity_id,action,description) VALUES($1,$2,$3,$4,$5,$6)',[s.orgId,s.userId,e,item.id,'create',`ایجاد ${actionText[e]}: ${item.name||item.title}`]);
- await c.query('INSERT INTO notifications(org_id,title,body) VALUES($1,$2,$3)',[s.orgId,`ثبت ${actionText[e]}`,String(item.name||item.title).slice(0,180)]);
+ await c.query('INSERT INTO notifications(org_id,entity,title,body) VALUES($1,$2,$3,$4)',[s.orgId,e,`ثبت ${actionText[e]}`,String(item.name||item.title).slice(0,180)]);
  if(e==='contacts'&&item.status==='lead') await c.query("INSERT INTO tasks(org_id,contact_id,title,priority,due_at) VALUES($1,$2,$3,'normal',CURRENT_DATE + 1)",[s.orgId,item.id,`پیگیری مشتری: ${item.name}`]);
  if(e==='contacts')await runWorkflows(c,s.orgId,s.userId,'contacts.created',{id:item.id,title:item.name,contactId:item.id});
  if(e==='tickets')await runWorkflows(c,s.orgId,s.userId,'tickets.created',{id:item.id,title:item.title,contactId:item.contact_id});
