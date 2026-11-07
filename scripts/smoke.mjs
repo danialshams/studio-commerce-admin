@@ -5,8 +5,8 @@ import {randomUUID} from 'node:crypto';
 const base=process.env.SMOKE_URL||'http://127.0.0.1:3000';
 const prefix=randomUUID().slice(0,8);
 const passwords={owner:'correct-horse-battery-secret-123',viewer:'some-unique-long-password-123'};
-async function api(path,{method='GET',body,cookie}={}){
- const res=await fetch(base+path,{method,headers:{...(body?{'content-type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{})},body:body?JSON.stringify(body):undefined,redirect:'manual'});
+async function api(path,{method='GET',body,cookie,headers={}}={}){
+ const res=await fetch(base+path,{method,headers:{...(body?{'content-type':'application/json'}:{}),...(cookie?{Cookie:cookie}:{}),...headers},body:body?JSON.stringify(body):undefined,redirect:'manual'});
  const text=await res.text();let data;try{data=JSON.parse(text)}catch{data=text}
  return {status:res.status,data,cookie:res.headers.get('set-cookie')?.split(';')[0]||null};
 }
@@ -16,6 +16,7 @@ const register=async(label)=>{
  must(r,200,'signup '+label);assert.ok(r.cookie);return r.cookie;
 };
 const a=await register('a'),b=await register('b');
+must(await api('/api/data/contacts',{method:'POST',cookie:a,headers:{Origin:'https://external.example'},body:{name:'Cross-site attempt'}}),403,'cross-origin write rejected');
 const contact=must(await api('/api/data/contacts',{method:'POST',cookie:a,body:{name:'Client A',phone:'09120000001',status:'lead'}}),201,'create A contact').item;
 assert.ok(contact.id);
 must(await api('/api/data/deals',{method:'POST',cookie:a,body:{title:'Negative deal',amount:-200}}),400,'invalid negative amount');
@@ -47,7 +48,15 @@ must(await api('/api/data/contacts',{cookie:accepted.cookie}),401,'disabled memb
 const notifications=must(await api('/api/notifications',{cookie:a}),200,'notifications');assert.ok(notifications.items.length>0);
 must(await api('/api/notifications',{method:'PATCH',cookie:a,body:{id:notifications.items[0].id}}),200,'mark read');
 must(await api('/api/cron/reminders'),401,'cron requires secret');
+const today=new Date().toISOString().slice(0,10);
+must(await api('/api/data/tasks',{method:'POST',cookie:a,body:{title:'Due today for integration test',due_at:today}}),201,'due today task');
+const secret=process.env.CRON_SECRET;
+assert.ok(secret&&secret.length>=32);
+const first=must(await api('/api/cron/reminders',{method:'POST',headers:{Authorization:'Bearer '+secret}}),200,'first authorized cron');
+assert.ok(first.generated>=1,'today reminder generated');
+const second=must(await api('/api/cron/reminders',{method:'POST',headers:{Authorization:'Bearer '+secret}}),200,'repeat authorized cron');
+assert.equal(second.generated,0,'cron does not duplicate generated reminders');
 const cron=await api('/api/cron/reminders',{method:'POST'});assert.equal(cron.status,401);
 const changed=await api('/api/settings',{method:'PUT',cookie:a,body:{old:passwords.owner,password:'another-unique-long-password-123'}});must(changed,200,'password update');
 must(await api('/api/data/contacts',{cookie:a}),401,'old session revoked');
-console.log('SMOKE PASS: signup, tenant isolation, CRUD, workflows, tickets, contracts, interactions, CSV, team invite, RBAC, notifications, revocation.');
+console.log('SMOKE PASS: tenant isolation, CRUD, workflows, tickets, contracts, interactions, CSV, team invite, RBAC, origin guard, due reminders, notifications, revocation.');
