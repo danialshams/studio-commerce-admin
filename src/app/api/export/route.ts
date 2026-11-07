@@ -11,7 +11,11 @@ const csvCell=(v:unknown)=>{
 export async function GET(req:Request){const s=await requireSession();if(!s)return fail('ورود لازم است.',401);
  const entity=new URL(req.url).searchParams.get('entity')||'';
  if(!allowed.includes(entity)||!authorize(s,entity))return fail('دسترسی مجاز نیست.',403);
- try{const r=await db().query(`SELECT * FROM ${entity} WHERE org_id=$1 ORDER BY created_at DESC LIMIT 20001`,[s.orgId]);
+ try{
+  const activityTypes=['contacts','deals','tasks','documents','contracts','tickets','interactions','automation_rules'].filter(type=>authorize(s,type));
+  const activityFilter=entity==='activities'?' AND entity=ANY($2::text[])':'';
+  const values=entity==='activities'?[s.orgId,activityTypes]:[s.orgId];
+  const r=await db().query(`SELECT * FROM ${entity} WHERE org_id=$1${activityFilter} ORDER BY created_at DESC LIMIT 20001`,values);
   if(r.rows.length>20000)return fail('برای خروجی بیش از ۲۰ هزار رکورد از پشتیبانی کمک بگیرید.',413);
   const columns=r.fields.map(f=>f.name).filter(n=>!['org_id','password_hash','token_hash'].includes(n));
   const text=['\uFEFF'+columns.map(csvCell).join(','),...r.rows.map(row=>columns.map(c=>csvCell(row[c])).join(','))].join('\r\n');
