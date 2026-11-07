@@ -7,7 +7,7 @@ async function api(url:string,method='GET',body?:unknown){
  const r=await fetch(url,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,cache:'no-store'});
  const data=await r.json();if(!r.ok)throw new Error(data.error||'درخواست ناموفق بود');return data;
 }
-export default function SignaturePanel(){
+export default function SignaturePanel({readOnly=false}:{readOnly?:boolean}){
  const [contracts,setContracts]=useState<Contract[]>([]),[requests,setRequests]=useState<Signature[]>([]);
  const [configured,setConfigured]=useState(false),[busy,setBusy]=useState(false);
  const [error,setError]=useState(''),[message,setMessage]=useState('');
@@ -32,19 +32,19 @@ export default function SignaturePanel(){
  }
  return <div className="integration-grid">
  <section className="panel"><div className="panel-head"><div><h2>امضای دیجیتال قرارداد</h2><p>آماده‌سازی درخواست برای اتصال به سرویس امضای معتبر</p></div></div>
- <p className="info-note">وضعیت اتصال: {configured?'سرویس آماده است.':'هنوز سرویسی خریداری یا متصل نشده است.'} ثبت پیش‌نویس رایگان است؛ امضای رسمی فقط از طریق ارائه‌دهندهٔ معتبر انجام می‌شود.</p>
- <form className="form-stack" onSubmit={create}>
+ <p className="info-note">وضعیت اتصال: {configured?'سرویس آماده است.':'هنوز سرویسی خریداری یا متصل نشده است.'} امضای رسمی فقط از طریق ارائه‌دهندهٔ معتبر انجام می‌شود؛ در نمایش عمومی امکان ثبت و ارسال وجود ندارد.</p>
+ {!readOnly&&<form className="form-stack" onSubmit={create}>
   <label>قرارداد<select name="contractId" required defaultValue=""><option value="">انتخاب قرارداد</option>{contracts.filter(c=>!['signed','cancelled','completed'].includes(c.status)).map(c=><option key={c.id} value={c.id}>{c.number} · {c.title}</option>)}</select></label>
   <label>نام امضاکننده<input name="signerName" maxLength={160} required/></label>
   <label>ایمیل امضاکننده<input type="email" name="signerEmail" dir="ltr" maxLength={255} required/></label>
   <button className="primary-btn fit" disabled={busy}>ایجاد درخواست امضا +</button>
- </form></section>
+ </form>}</section>
  <section className="panel"><div className="panel-head"><div><h2>درخواست‌های امضا</h2><p>تاریخچه و وضعیت قراردادها</p></div><button className="secondary-btn fit" onClick={()=>void reload()}>به‌روزرسانی</button></div>
  <div className="integration-list">{requests.length===0?<p className="info-note">هنوز درخواستی ثبت نشده است.</p>:requests.map(r=><article key={r.id} className="integration-item">
   <div className="integration-item-head"><strong>{r.contract_title}</strong><span className="status">{states[r.status]||r.status}</span></div>
   <p>{r.signer_name} · {r.signer_email}</p><small>{new Date(r.created_at).toLocaleString('fa-IR')}</small>
-  {r.status==='draft'&&<div className="integration-actions"><button className="primary-btn fit" disabled={!configured||busy} onClick={()=>void action(r.id,'send')}>ارسال برای امضا</button><button className="secondary-btn fit" disabled={busy} onClick={()=>void action(r.id,'cancel')}>لغو</button></div>}
-  {r.status==='pending'&&r.signing_url&&<a href={r.signing_url} target="_blank" rel="noopener noreferrer" className="secondary-btn fit">مشاهده لینک امضا</a>}
+  {!readOnly&&r.status==='draft'&&<div className="integration-actions"><button className="primary-btn fit" disabled={!configured||busy} onClick={()=>void action(r.id,'send')}>ارسال برای امضا</button><button className="secondary-btn fit" disabled={busy} onClick={()=>void action(r.id,'cancel')}>لغو</button></div>}
+  {!readOnly&&r.status==='pending'&&r.signing_url&&<a href={r.signing_url} target="_blank" rel="noopener noreferrer" className="secondary-btn fit">مشاهده لینک امضا</a>}
  </article>)}</div>
  </section>
  {(error||message)&&<p role="status" className={'banner '+(error?'error-banner':'success-banner')}>{error||message}</p>}
