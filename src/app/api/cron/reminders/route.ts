@@ -1,26 +1,31 @@
 import {NextResponse} from 'next/server';
 import {timingSafeEqual} from 'node:crypto';
-import {db,transaction} from '@/lib/db';
-function valid(auth:string|null){
+import {db} from '@/lib/db';
+function authorized(auth:string|null){
  const secret=process.env.CRON_SECRET;
  if(!secret||secret.length<32||!auth?.startsWith('Bearer '))return false;
- const supplied=Buffer.from(auth.slice(7));const expected=Buffer.from(secret);
+ const expected=Buffer.from(secret), supplied=Buffer.from(auth.slice(7));
  return supplied.length===expected.length&&timingSafeEqual(supplied,expected);
 }
-export async function POST(req:Request){
- if(!valid(req.headers.get('authorization')))return NextResponse.json({error:'Unauthorized'},{status:401});
+async function execute(req:Request){
+ if(!authorized(req.headers.get('authorization')))return NextResponse.json({error:'Unauthorized'},{status:401});
  try {
-  const data=await transaction(async c=>{
-   const overdue=await c.query(`SELECT id,org_id,title FROM tasks WHERE due_at<current_date AND status<>'done' ORDER BY due_at LIMIT 250`);
-   let generated=0;
-   for(const task of overdue.rows){
-    const marker=await c.query("INSERT INTO reminder_runs(org_id,entity_id,kind,run_date) VALUES($1,$2,'task_overdue',current_date) ON CONFLICT DO NOTHING RETURNING id",[task.org_id,task.id]);
-    if(!marker.rowCount)continue;
-    await c.query('INSERT INTO notifications(org_id,title,body) VALUES($1,$2,$3)',[task.org_id,'پیگیری عقب‌افتاده',`موعد «${task.title}» گذشته است.`.slice(0,500)]);
-    generated++;
-   }
-   return {checked:overdue.rows.length,generated};
-  });
-  return NextResponse.json({ok:true,...data});
+  const r=await db().query(`WITH due AS (
+    SELECT org_id,id,title FROM tasks WHERE due_at<current_date AND status<>'done'
+    ORDER BY due_at LIMIT 200
+   ), marked AS (
+    INSERT INTO reminder_runs(org_id,entity_id,kind,run_date)
+    SELECT org_id,id,'task_overdue',current_date FROM due
+    ON CONFLICT DO NOTHING RETURNING org_id,entity_id
+   ), made AS (
+    INSERT INTO notifications(org_id,title,body)
+    SELECT m.org_id,'پیگیری عقب‌افتاده',LEFT('موعد «'||t.title||'» گذشته است.',500)
+    FROM marked m JOIN tasks t ON t.id=m.entity_id AND t.org_id=m.org_id
+    RETURNING id
+   ) SELECT count(*)::int AS generated FROM made`);
+  return NextResponse.json({ok:true,generated:r.rows[0]?.generated||0});
  }catch(e){console.error('reminders',e);return NextResponse.json({error:'Job failed'},{status:500})}
 }
+// Vercel Cron invokes GET; independent VPS schedulers may use POST.
+export const GET=execute;
+export const POST=execute;

@@ -7,8 +7,24 @@ on:
 permissions:
   contents: read
 jobs:
-  build:
+  build-and-smoke:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: crmtest
+          POSTGRES_USER: crmtest
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U crmtest -d crmtest"
+          --health-interval 5s --health-timeout 5s --health-retries 15
+    env:
+      DATABASE_URL: postgresql://crmtest:testpass@127.0.0.1:5432/crmtest
+      SESSION_SECRET: this-is-a-unique-github-actions-test-only-secret-which-is-not-for-production
+      CRON_SECRET: another-unique-github-actions-test-only-secret-which-is-not-for-production
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -17,3 +33,14 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
       - run: npm run build
+      - name: Initialize test database
+        run: |
+          if ! command -v psql >/dev/null; then sudo apt-get update && sudo apt-get install -y postgresql-client; fi
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/schema.sql
+      - name: Run HTTP integration smoke tests
+        run: |
+          npm run start > /tmp/daira-crm-next.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          node --input-type=module -e 'for(let i=0;i<120;i++){try{const r=await fetch("http://127.0.0.1:3000/login");if(r.ok)process.exit(0)}catch{}await new Promise(r=>setTimeout(r,500))}process.exit(1)'
+          node scripts/smoke.mjs || { cat /tmp/daira-crm-next.log; exit 1; }

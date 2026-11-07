@@ -28,3 +28,5 @@ Responsive Persian CRM for sales pipeline, contacts, tasks, quotations/invoices,
 - Create a random `CRON_SECRET` (at least 32 characters); call `POST /api/cron/reminders` with `Authorization: Bearer <CRON_SECRET>` from any trusted daily cron scheduler (VPS cron, CI scheduler, or Vercel Cron-compatible service). The endpoint is idempotent per task and day and never depends on a proprietary provider.
 - The CRM has internally triggered notification/task automations. Automatic email/SMS delivery requires selecting and connecting external providers; no email or SMS is silently sent without configuration.
 - Team invitations are secure one-time URLs, valid for 72 hours. The owner must share the link directly until outgoing email delivery is configured.
+
+Vercel invokes the included `vercel.json` daily at 06:00 UTC. On another host run the same authenticated endpoint from a standard daily cron job. Keep the `CRON_SECRET` environment variable in the runtime secret store; do not commit the actual value.
