@@ -27,8 +27,8 @@ async function execute(req:Request){
     SELECT org_id,id,kind,CURRENT_DATE FROM due
     ON CONFLICT DO NOTHING RETURNING org_id,entity_id,kind
    ), made AS (
-    INSERT INTO notifications(org_id,title,body)
-    SELECT m.org_id,
+    INSERT INTO notifications(org_id,entity,title,body)
+    SELECT m.org_id,'tasks',
       CASE WHEN m.kind='task_due' THEN 'موعد پیگیری امروز' ELSE 'پیگیری عقب‌افتاده' END,
       LEFT(CASE WHEN m.kind='task_due' THEN 'موعد «'||t.title||'» امروز است.'
         ELSE 'موعد «'||t.title||'» گذشته است.' END,500)
