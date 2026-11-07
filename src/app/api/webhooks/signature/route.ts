@@ -35,8 +35,8 @@ export async function POST(req:Request){
      WHERE r.provider_request_id=$1 FOR UPDATE OF r`,[providerId]);
    if(!found.rowCount)throw new Error('signature-not-found');
    const r=found.rows[0];if(r.status!=='pending')return 'ignored';
-   await client.query(`UPDATE signature_requests SET status=$2,updated_at=now(),
-     signed_at=CASE WHEN $2='signed' THEN now() ELSE NULL END WHERE id=$1`,[r.id,status]);
+   await client.query(`UPDATE signature_requests SET status=$2::varchar,updated_at=now(),
+     signed_at=CASE WHEN $2::varchar='signed' THEN now() ELSE NULL END WHERE id=$1`,[r.id,status]);
    if(status==='signed'){
     await client.query(`UPDATE contracts SET status='signed',updated_at=now()
       WHERE id=$1 AND org_id=$2 AND status NOT IN ('cancelled','completed')`,[r.contract_id,r.org_id]);
