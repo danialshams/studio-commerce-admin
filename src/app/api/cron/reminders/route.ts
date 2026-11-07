@@ -11,15 +11,27 @@ async function execute(req:Request){
  if(!authorized(req.headers.get('authorization')))return NextResponse.json({error:'Unauthorized'},{status:401});
  try {
   const r=await db().query(`WITH due AS (
-    SELECT org_id,id,title FROM tasks WHERE due_at<current_date AND status<>'done'
-    ORDER BY due_at LIMIT 200
+    SELECT t.org_id,t.id,t.title,
+       CASE WHEN t.due_at=CURRENT_DATE THEN 'task_due' ELSE 'task_overdue' END AS kind
+    FROM tasks t
+    WHERE t.due_at<=CURRENT_DATE AND t.status<>'done'
+    AND NOT EXISTS (
+      SELECT 1 FROM reminder_runs r
+      WHERE r.org_id=t.org_id AND r.entity_id=t.id
+      AND r.kind=CASE WHEN t.due_at=CURRENT_DATE THEN 'task_due' ELSE 'task_overdue' END
+      AND r.run_date=CURRENT_DATE
+    )
+    ORDER BY t.due_at,t.id LIMIT 200
    ), marked AS (
     INSERT INTO reminder_runs(org_id,entity_id,kind,run_date)
-    SELECT org_id,id,'task_overdue',current_date FROM due
-    ON CONFLICT DO NOTHING RETURNING org_id,entity_id
+    SELECT org_id,id,kind,CURRENT_DATE FROM due
+    ON CONFLICT DO NOTHING RETURNING org_id,entity_id,kind
    ), made AS (
     INSERT INTO notifications(org_id,title,body)
-    SELECT m.org_id,'پیگیری عقب‌افتاده',LEFT('موعد «'||t.title||'» گذشته است.',500)
+    SELECT m.org_id,
+      CASE WHEN m.kind='task_due' THEN 'موعد پیگیری امروز' ELSE 'پیگیری عقب‌افتاده' END,
+      LEFT(CASE WHEN m.kind='task_due' THEN 'موعد «'||t.title||'» امروز است.'
+        ELSE 'موعد «'||t.title||'» گذشته است.' END,500)
     FROM marked m JOIN tasks t ON t.id=m.entity_id AND t.org_id=m.org_id
     RETURNING id
    ) SELECT count(*)::int AS generated FROM made`);
