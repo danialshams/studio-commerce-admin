@@ -109,7 +109,7 @@ assert.equal(seededStatus.seeded,true);
 const repeated=must(await api('/api/demo-data',{method:'POST',cookie:a}),200,'idempotent demo import');
 assert.equal(repeated.seeded,false,'repeated import does not duplicate entries');
 const seededContacts=must(await api('/api/data/contacts',{cookie:a}),200,'seeded contacts');
-assert.equal(seededContacts.items.length,16,'existing real records preserved, plus 14 demo contacts');
+assert.equal(seededContacts.items.length,17,'three pre-existing contacts are preserved alongside 14 demo contacts');
 assert.equal(seededContacts.items.filter(x=>x.tags?.includes('دمو')).length,14);
 assert.ok(seededContacts.items.filter(x=>x.tags?.includes('دمو')).every(x=>x.delivery_consent===false));
 const seededDeals=must(await api('/api/data/deals',{cookie:a}),200,'seeded pipeline');
