@@ -34,6 +34,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
       - run: npm run migrate
+      - run: npm run seed:showcase
       - run: npm run build
       - name: Initialize test database
         run: |
@@ -41,6 +42,7 @@ jobs:
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/schema.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/003_integrations.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/004_demo_data.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/005_public_showcase.sql
       - name: Run HTTP integration smoke tests
         run: |
           npm run start > /tmp/daira-crm-next.log 2>&1 &
