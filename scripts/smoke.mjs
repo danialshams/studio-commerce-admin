@@ -17,6 +17,10 @@ const register=async(label)=>{
  must(r,200,'signup '+label);assert.ok(r.cookie);return r.cookie;
 };
 const a=await register('a'),b=await register('b');
+const emptyDemo=must(await api('/api/demo-data',{cookie:a}),200,'new workspace demo status');
+assert.equal(emptyDemo.seeded,false,'data not loaded without opt-in');
+const baselineContacts=must(await api('/api/data/contacts',{cookie:a}),200,'empty workspace contacts');
+assert.equal(baselineContacts.items.length,0,'opt-in data does not prepopulate unrelated accounts');
 must(await api('/api/health'),200,'live DB readiness after migrations');
 must(await api('/api/data/contacts',{method:'POST',cookie:a,headers:{Origin:'https://external.example'},body:{name:'Cross-site attempt'}}),403,'cross-origin write rejected');
 const contact=must(await api('/api/data/contacts',{method:'POST',cookie:a,body:{name:'Client A',phone:'09120000001',email:'client-a@example.test',status:'lead'}}),201,'create A contact').item;
@@ -93,6 +97,36 @@ assert.ok(supportNotifs.items.every(x=>!['deals','contracts','documents','automa
 must(await api('/api/cron/deliveries'),401,'outbox scheduler secret required');
 const deliveryRun=must(await api('/api/cron/deliveries',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET}}),200,'empty delivery cron');
 assert.equal(deliveryRun.sent,0,'draft messages are not sent');
+// Owner-only sample import is atomic, isolated, idempotent and safe for live contacts.
+must(await api('/api/demo-data',{method:'POST',cookie:accepted.cookie}),403,'viewer cannot import demo data');
+const sample=must(await api('/api/demo-data',{method:'POST',cookie:a}),201,'seed owner demo data');
+assert.equal(sample.seeded,true);
+assert.equal(sample.counts.contacts,14);
+assert.equal(sample.counts.deals,12);
+assert.equal(sample.counts.tasks,15);
+const seededStatus=must(await api('/api/demo-data',{cookie:a}),200,'demo status after import');
+assert.equal(seededStatus.seeded,true);
+const repeated=must(await api('/api/demo-data',{method:'POST',cookie:a}),200,'idempotent demo import');
+assert.equal(repeated.seeded,false,'repeated import does not duplicate entries');
+const seededContacts=must(await api('/api/data/contacts',{cookie:a}),200,'seeded contacts');
+assert.equal(seededContacts.items.length,16,'existing real records preserved, plus 14 demo contacts');
+assert.equal(seededContacts.items.filter(x=>x.tags?.includes('دمو')).length,14);
+assert.ok(seededContacts.items.filter(x=>x.tags?.includes('دمو')).every(x=>x.delivery_consent===false));
+const seededDeals=must(await api('/api/data/deals',{cookie:a}),200,'seeded pipeline');
+assert.ok(seededDeals.items.some(x=>x.stage==='won'));
+assert.ok(seededDeals.items.some(x=>x.stage==='negotiation'));
+const otherTenantList=must(await api('/api/data/contacts',{cookie:b}),200,'other tenant isolated from demo');
+assert.equal(otherTenantList.items.length,0);
+const aDrafts=must(await api('/api/communications',{cookie:a}),200,'demo outbound drafts');
+assert.ok(aDrafts.items.some(x=>x.subject?.startsWith('[دمو]')));
+assert.ok(aDrafts.items.filter(x=>x.subject?.startsWith('[دمو]')).every(x=>x.status==='draft'));
+const demoSignup=await api('/api/auth/signup',{method:'POST',body:{
+ name:'Demo opt-in owner',company:'Sample tenant opt-in',
+ email:`optin-${prefix}@example.test`,password:passwords.owner,withDemoData:'on'
+}});
+must(demoSignup,200,'explicit signup demo option');
+const demoTenant=must(await api('/api/data/contacts',{cookie:demoSignup.cookie}),200,'onboarding sample data');
+assert.equal(demoTenant.items.length,14,'opt-in new tenant has exactly 14 sample contacts');
 const members=must(await api('/api/team',{cookie:a}),200,'members');const v=members.members.find(x=>x.email===`viewer-${prefix}@example.test`);assert.ok(v);
 must(await api('/api/team',{method:'PATCH',cookie:a,body:{id:v.id,is_active:false}}),200,'disable member');
 must(await api('/api/data/contacts',{cookie:accepted.cookie}),401,'disabled member rejected');
@@ -110,4 +144,4 @@ assert.equal(second.generated,0,'cron does not duplicate generated reminders');
 const cron=await api('/api/cron/reminders',{method:'POST'});assert.equal(cron.status,401);
 const changed=await api('/api/settings',{method:'PUT',cookie:a,body:{old:passwords.owner,password:'another-unique-long-password-123'}});must(changed,200,'password update');
 must(await api('/api/data/contacts',{cookie:a}),401,'old session revoked');
-console.log('SMOKE PASS: tenant isolation, CRUD, consent, drafts, provider gates, signed webhook/replay, audit, delivery cron, invitations, roles and reminders.');
+console.log('SMOKE PASS: idempotent Persian demo seed, explicit onboarding opt-in, tenant isolation, messaging consent, signatures, notifications, RBAC and reminders.');
