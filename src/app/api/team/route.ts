@@ -7,10 +7,10 @@ const allowed=['admin','sales','support','viewer'];
 const hash=(token:string)=>createHash('sha256').update(token).digest('hex');
 export async function GET(){
  const s=await requireSession();if(!s)return fail('ورود لازم است.',401);
- if(!manageTeam(s))return fail('مجوز مدیریت تیم ندارید.',403);
+ if(!manageTeam(s)&&s.role!=='demo')return fail('مجوز مدیریت تیم ندارید.',403);
  const [members,invites]=await Promise.all([
  db().query('SELECT id,name,email,role,is_active,created_at FROM users WHERE org_id=$1 ORDER BY created_at',[s.orgId]),
- db().query('SELECT id,email,role,expires_at,created_at FROM invitations WHERE org_id=$1 AND accepted_at IS NULL AND expires_at>now() ORDER BY created_at DESC',[s.orgId])]);
+ s.role==='demo'?Promise.resolve({rows:[]}):db().query('SELECT id,email,role,expires_at,created_at FROM invitations WHERE org_id=$1 AND accepted_at IS NULL AND expires_at>now() ORDER BY created_at DESC',[s.orgId])]);
  return NextResponse.json({members:members.rows,invites:invites.rows});
 }
 export async function POST(req:Request){
