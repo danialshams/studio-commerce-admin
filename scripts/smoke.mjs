@@ -1,7 +1,8 @@
 // Integration smoke test: two separate tenants, team invitations, role enforcement and CRM workflows.
 // Runs only against a disposable PostgreSQL database, never production.
 import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHmac} from 'node:crypto';
+import {Pool} from 'pg';
 const base=process.env.SMOKE_URL||'http://127.0.0.1:3000';
 const prefix=randomUUID().slice(0,8);
 const passwords={owner:'correct-horse-battery-secret-123',viewer:'some-unique-long-password-123'};
@@ -16,8 +17,9 @@ const register=async(label)=>{
  must(r,200,'signup '+label);assert.ok(r.cookie);return r.cookie;
 };
 const a=await register('a'),b=await register('b');
+must(await api('/api/health'),200,'live DB readiness after migrations');
 must(await api('/api/data/contacts',{method:'POST',cookie:a,headers:{Origin:'https://external.example'},body:{name:'Cross-site attempt'}}),403,'cross-origin write rejected');
-const contact=must(await api('/api/data/contacts',{method:'POST',cookie:a,body:{name:'Client A',phone:'09120000001',status:'lead'}}),201,'create A contact').item;
+const contact=must(await api('/api/data/contacts',{method:'POST',cookie:a,body:{name:'Client A',phone:'09120000001',email:'client-a@example.test',status:'lead'}}),201,'create A contact').item;
 assert.ok(contact.id);
 must(await api('/api/data/deals',{method:'POST',cookie:a,body:{title:'Negative deal',amount:-200}}),400,'invalid negative amount');
 must(await api('/api/data/tasks',{method:'POST',cookie:a,body:{title:'Bad date',due_at:'2026-02-30'}}),400,'invalid date');
@@ -33,7 +35,7 @@ const taskList=must(await api('/api/data/tasks',{cookie:a}),200,'tasks list');as
 const ticket=must(await api('/api/data/tickets',{method:'POST',cookie:a,body:{title:'Support request',contact_id:contact.id,status:'open',description:'Example issue'}}),201,'ticket create').item;
 must(await api('/api/ticket-comments',{method:'POST',cookie:a,body:{ticketId:ticket.id,body:'We are investigating.'}}),201,'ticket comment');
 const comments=must(await api('/api/ticket-comments?ticketId='+ticket.id,{cookie:a}),200,'ticket comments');assert.equal(comments.items.length,1);
-must(await api('/api/data/contracts',{method:'POST',cookie:a,body:{number:'TEST-'+prefix,title:'Website agreement',contact_id:contact.id,amount:420000,status:'draft'}}),201,'contract');
+const contract=must(await api('/api/data/contracts',{method:'POST',cookie:a,body:{number:'TEST-'+prefix,title:'Website agreement',contact_id:contact.id,amount:420000,status:'draft'}}),201,'contract').item;
 must(await api('/api/data/interactions',{method:'POST',cookie:a,body:{title:'Follow-up call',kind:'call',contact_id:contact.id}}),201,'interaction');
 must(await api('/api/import/contacts',{method:'POST',cookie:a,body:{rows:[{name:'Imported CSV person',phone:'09120000002',status:'prospect'}]}}),200,'CSV import');
 const csv=await api('/api/export?entity=contacts',{cookie:a});assert.equal(csv.status,200);assert.match(csv.data,/Imported CSV person/);
@@ -57,6 +59,40 @@ assert.ok(supportAudit.items.every(x=>!['deals','documents','contracts','automat
 const supportExport=await api('/api/export?entity=activities',{cookie:support.cookie});
 assert.equal(supportExport.status,200,'support CSV export allowed');
 assert.doesNotMatch(supportExport.data,/"automation_rules"/,'support CSV excludes inaccessible activity');
+// Messaging is opt-in and provider-agnostic. No real email/SMS is dispatched in tests.
+const draft=must(await api('/api/communications',{method:'POST',cookie:a,body:{contactId:contact.id,channel:'sms',body:'Hello from the CRM'}}),201,'message draft').item;
+must(await api('/api/communications',{method:'PATCH',cookie:a,body:{id:draft.id,action:'queue'}}),409,'consent required');
+must(await api('/api/data/contacts',{method:'PATCH',cookie:a,body:{id:contact.id,delivery_consent:true}}),200,'record explicit consent');
+must(await api('/api/communications',{method:'PATCH',cookie:a,body:{id:draft.id,action:'queue'}}),409,'SMS provider not configured');
+const emailDraft=must(await api('/api/communications',{method:'POST',cookie:a,body:{contactId:contact.id,channel:'email',subject:'Test subject',body:'Hello from CRM email'}}),201,'email draft').item;
+must(await api('/api/communications',{method:'PATCH',cookie:a,body:{id:emailDraft.id,action:'queue'}}),409,'SMTP not configured');
+must(await api('/api/communications',{cookie:accepted.cookie}),403,'viewer cannot access message history');
+must(await api('/api/communications',{cookie:support.cookie}),200,'support can manage messages');
+const signRequest=must(await api('/api/signatures',{method:'POST',cookie:a,body:{contractId:contract.id,signerName:'Client A',signerEmail:'client-a@example.test'}}),201,'signature draft').item;
+must(await api('/api/signatures',{method:'PATCH',cookie:a,body:{id:signRequest.id,action:'send'}}),409,'no signing provider');
+must(await api('/api/signatures',{cookie:accepted.cookie}),200,'viewer can inspect contract signature status');
+must(await api('/api/signatures',{cookie:support.cookie}),403,'support cannot see financial signature records');
+must(await api('/api/webhooks/signature',{method:'POST',body:{eventId:randomUUID(),providerRequestId:'unknown',status:'signed'},headers:{'x-daira-timestamp':String(Math.floor(Date.now()/1000)),'x-daira-signature':'sha256='+('0'.repeat(64))}}),401,'unsigned webhook rejected');
+// Mock the provider handshake in the disposable test database, then verify
+// signed callbacks and replay protection without buying or contacting a provider.
+const pool=new Pool({connectionString:process.env.DATABASE_URL});
+const fakeProviderId='ci-provider-'+prefix;
+await pool.query("UPDATE signature_requests SET status='pending',provider_request_id=$2 WHERE id=$1",[signRequest.id,fakeProviderId]);
+const event={eventId:randomUUID(),providerRequestId:fakeProviderId,status:'signed'};
+const stamp=String(Math.floor(Date.now()/1000));
+const sign=createHmac('sha256',process.env.SIGN_WEBHOOK_SECRET).update(stamp+'.'+JSON.stringify(event)).digest('hex');
+const signedHeaders={'x-daira-timestamp':stamp,'x-daira-signature':'sha256='+sign};
+must(await api('/api/webhooks/signature',{method:'POST',body:event,headers:signedHeaders}),200,'signed webhook accepted');
+const repeat=must(await api('/api/webhooks/signature',{method:'POST',body:event,headers:signedHeaders}),200,'webhook replay idempotent');
+assert.equal(repeat.result,'duplicate');
+const updatedContracts=must(await api('/api/data/contracts',{cookie:a}),200,'signed contract list');
+assert.equal(updatedContracts.items.find(x=>x.id===contract.id)?.status,'signed','contract signed by trusted callback');
+await pool.end();
+const supportNotifs=must(await api('/api/notifications',{cookie:support.cookie}),200,'scoped notifications');
+assert.ok(supportNotifs.items.every(x=>!['deals','contracts','documents','automation_rules'].includes(x.entity)),'support sees only permitted notifications');
+must(await api('/api/cron/deliveries'),401,'outbox scheduler secret required');
+const deliveryRun=must(await api('/api/cron/deliveries',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET}}),200,'empty delivery cron');
+assert.equal(deliveryRun.sent,0,'draft messages are not sent');
 const members=must(await api('/api/team',{cookie:a}),200,'members');const v=members.members.find(x=>x.email===`viewer-${prefix}@example.test`);assert.ok(v);
 must(await api('/api/team',{method:'PATCH',cookie:a,body:{id:v.id,is_active:false}}),200,'disable member');
 must(await api('/api/data/contacts',{cookie:accepted.cookie}),401,'disabled member rejected');
@@ -74,4 +110,4 @@ assert.equal(second.generated,0,'cron does not duplicate generated reminders');
 const cron=await api('/api/cron/reminders',{method:'POST'});assert.equal(cron.status,401);
 const changed=await api('/api/settings',{method:'PUT',cookie:a,body:{old:passwords.owner,password:'another-unique-long-password-123'}});must(changed,200,'password update');
 must(await api('/api/data/contacts',{cookie:a}),401,'old session revoked');
-console.log('SMOKE PASS: tenant isolation, CRUD, workflows, tickets, contracts, interactions, CSV, team invite, RBAC, origin guard, due reminders, notifications, revocation.');
+console.log('SMOKE PASS: tenant isolation, CRUD, consent, drafts, provider gates, signed webhook/replay, audit, delivery cron, invitations, roles and reminders.');
