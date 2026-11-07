@@ -2,6 +2,16 @@
 
 Persian RTL, multi-tenant CRM, with Next.js 16, PostgreSQL and native Docker hosting. CRM is published from the **daira-crm** branch in the shared Git repository, **not** its unrelated `main` branch.
 
+## Fictional sample data (demo)
+
+Each organization has its own isolated database records. The **owner** can open **Settings → داده‌های نمایشی CRM → افزودن داده‌های دمو +** to populate the workspace once. New account registration has an explicitly labeled, preselected checkbox that can be unchecked to start empty. Existing records are never overwritten.
+
+The fixture creates 14 fictional contacts, 12 sales opportunities (including won deals over the past six months), 15 follow-up tasks, 8 quotations/invoices, 6 contracts, 6 support tickets with comments, 9 logged interactions, 3 disabled example workflow rules, sample notifications, 2 **draft-only** email messages and one **draft-only** signature envelope. Every sample contact uses a reserved `@daira.example` email, a non-dialable phone placeholder, and `delivery_consent=false`. All automation rules are disabled and scheduler-based reminders skip sample tasks; nothing contacts external recipients. Sample records are clearly marked `[دمو]` in descriptions/notes or `دمو` in contact tags.
+
+Seeding happens in one PostgreSQL transaction, under a per-organization lock, and is idempotent through `demo_seed_runs`. Repeating the action does not duplicate entries. Do not use sample sales or invoices for real financial reporting. Deleting demo content automatically is deliberately not enabled because customers might have attached their own records to the sample data.
+
+Existing PostgreSQL databases receive `database/004_demo_data.sql` through `npm run migrate`. Fresh Docker databases initialize it automatically. The demo endpoint never exposes a production-wide seed, password or privileged bypass.
+
 ## Included features
 
 - Organization-based signup/login, bcrypt password hashes, revocable HttpOnly sessions, login throttling, invitations (72-hour one-time URL), owner/admin/sales/support/viewer permissions.
@@ -24,7 +34,7 @@ npm run build
 npm run start
 ```
 
-`npm run migrate` applies `database/schema.sql` and `database/003_integrations.sql` under a PostgreSQL advisory transaction lock. All changes are additive and repeatable. Do **not** wipe an existing database to upgrade it. Back up before production migrations.
+`npm run migrate` applies `database/schema.sql`, `database/003_integrations.sql` and `database/004_demo_data.sql` under a PostgreSQL advisory transaction lock. All changes are additive and repeatable. Do **not** wipe an existing database to upgrade it. Back up before production migrations.
 
 The Vercel project runs `npm run migrate && npm run build` from `vercel.json`, so schema changes must complete before the new deployment is published. A failed migration fails the deployment and retains the last known-good production deployment. GitHub Actions tests migration, TypeScript, build and disposable PostgreSQL HTTP integration flows.
 
