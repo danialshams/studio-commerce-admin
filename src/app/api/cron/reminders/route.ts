@@ -14,7 +14,7 @@ async function execute(req:Request){
     SELECT t.org_id,t.id,t.title,
        CASE WHEN t.due_at=CURRENT_DATE THEN 'task_due' ELSE 'task_overdue' END AS kind
     FROM tasks t
-    WHERE t.due_at<=CURRENT_DATE AND t.status<>'done'
+    WHERE t.due_at<=CURRENT_DATE AND t.status<>'done' AND t.notes NOT LIKE '[دمو]%'
     AND NOT EXISTS (
       SELECT 1 FROM reminder_runs r
       WHERE r.org_id=t.org_id AND r.entity_id=t.id
