@@ -32,11 +32,13 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
+      - run: npm run migrate
       - run: npm run build
       - name: Initialize test database
         run: |
           if ! command -v psql >/dev/null; then sudo apt-get update && sudo apt-get install -y postgresql-client; fi
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/003_integrations.sql
       - name: Run HTTP integration smoke tests
         run: |
           npm run start > /tmp/daira-crm-next.log 2>&1 &
