@@ -3,10 +3,10 @@ import { db, transaction } from '@/lib/db';
 import { requireSession, fail, textVal, moneyVal, isoDate, isUUID, actionText } from '@/lib/common';
 import { authorize } from '@/lib/access';
 import { runWorkflows } from '@/lib/workflows';
-type Key='contacts'|'deals'|'tasks'|'documents'|'activities'|'contracts'|'tickets'|'automation_rules';
+type Key='contacts'|'deals'|'tasks'|'documents'|'activities'|'contracts'|'tickets'|'automation_rules'|'interactions';
 type Field={name:string;type:'text'|'money'|'number'|'date'|'foreign'|'enum'|'boolean';max?:number;allowed?:string[]};
 const fields:Record<string,Field[]>={
- contacts:[{name:'name',type:'text',max:180},{name:'company',type:'text',max:180},{name:'email',type:'text',max:255},{name:'phone',type:'text',max:40},{name:'status',type:'enum',allowed:['lead','prospect','customer','inactive']},{name:'source',type:'text',max:100},{name:'tags',type:'text',max:400},{name:'notes',type:'text',max:5000}],
+ contacts:[{name:'name',type:'text',max:180},{name:'company',type:'text',max:180},{name:'email',type:'text',max:255},{name:'phone',type:'text',max:40},{name:'status',type:'enum',allowed:['lead','prospect','customer','inactive']},{name:'source',type:'text',max:100},{name:'tags',type:'text',max:400},{name:'notes',type:'text',max:5000},{name:'score',type:'number'}],
  deals:[{name:'title',type:'text',max:180},{name:'contact_id',type:'foreign'},{name:'amount',type:'money'},{name:'stage',type:'enum',allowed:['new','qualified','proposal','negotiation','won','lost']},{name:'probability',type:'number'},{name:'expected_at',type:'date'},{name:'notes',type:'text',max:5000},{name:'assignee_id',type:'foreign'}],
  tasks:[{name:'title',type:'text',max:200},{name:'contact_id',type:'foreign'},{name:'deal_id',type:'foreign'},{name:'priority',type:'enum',allowed:['low','normal','high','urgent']},{name:'status',type:'enum',allowed:['todo','doing','done']},{name:'due_at',type:'date'},{name:'notes',type:'text',max:5000},{name:'assignee_id',type:'foreign'}],
  documents:[{name:'number',type:'text',max:40},{name:'title',type:'text',max:200},{name:'kind',type:'enum',allowed:['quote','invoice']},{name:'contact_id',type:'foreign'},{name:'amount',type:'money'},{name:'status',type:'enum',allowed:['draft','sent','accepted','paid','cancelled']},{name:'due_at',type:'date'},{name:'notes',type:'text',max:5000}],
@@ -16,10 +16,13 @@ const fields:Record<string,Field[]>={
  tickets:[{name:'title',type:'text',max:200},{name:'contact_id',type:'foreign'},{name:'assignee_id',type:'foreign'},
  {name:'description',type:'text',max:10000},{name:'priority',type:'enum',allowed:['low','normal','high','urgent']},
  {name:'status',type:'enum',allowed:['open','in_progress','waiting','resolved','closed']},{name:'due_at',type:'date'}],
+ interactions:[{name:'title',type:'text',max:200},{name:'contact_id',type:'foreign'},{name:'deal_id',type:'foreign'},
+ {name:'kind',type:'enum',allowed:['call','email','message','meeting','note']},{name:'direction',type:'enum',allowed:['inbound','outbound']},
+ {name:'notes',type:'text',max:8000}],
  automation_rules:[{name:'title',type:'text',max:180},{name:'event',type:'enum',allowed:['contacts.created','deals.won','tickets.created','contracts.signed']},
  {name:'action',type:'enum',allowed:['notification','task']},{name:'payload',type:'text',max:500},{name:'enabled',type:'boolean'}]
 };
-function entityOf(s:string):Key|null {return ['contacts','deals','tasks','documents','activities','contracts','tickets','automation_rules'].includes(s)?s as Key:null}
+function entityOf(s:string):Key|null {return ['contacts','deals','tasks','documents','activities','contracts','tickets','automation_rules','interactions'].includes(s)?s as Key:null}
 function cleanup(e:Key,body:Record<string,unknown>){const result:Record<string,unknown>={};for(const f of fields[e]||[]){if(!Object.hasOwn(body,f.name))continue;const v=body[f.name];if(f.type==='text')result[f.name]=textVal(v,f.max||250);if(f.type==='money')result[f.name]=moneyVal(v);if(f.type==='number')result[f.name]=Math.max(0,Math.min(100,Math.round(Number(v)||0)));if(f.type==='date')result[f.name]=isoDate(v);if(f.type==='foreign')result[f.name]=isUUID(v)?v:null;if(f.type==='boolean')result[f.name]=v===true||v==='true'||v==='on';if(f.type==='enum')result[f.name]=f.allowed?.includes(String(v))?String(v):f.allowed?.[0];}return result}
 async function validReferences(c:{query:(q:string,v?:unknown[])=>Promise<{rowCount:number|null}>},org:string,r:Record<string,unknown>){
 for (const [key,table] of [['contact_id','contacts'],['deal_id','deals'],['assignee_id','users']] as const){if(!r[key])continue;const a=await c.query(`SELECT id FROM ${table} WHERE id=$1 AND org_id=$2`,[r[key],org]);if(!a.rowCount)return false;}return true;
@@ -34,7 +37,7 @@ export async function GET(req:Request,{params}:{params:Promise<{entity:string}>}
 }
 export async function POST(req:Request,{params}:{params:Promise<{entity:string}>}){
  const s=await requireSession();if(!s)return fail('لطفاً وارد شوید.',401);const e=entityOf((await params).entity);if(!e||e==='activities'||!authorize(s,e,true))return fail('عملیات مجاز نیست.',403);
- try {const b=await req.json(),r=cleanup(e,b);if(!textVal(r.name||r.title,200))return fail('عنوان یا نام الزامی است.');if((e==='documents'||e==='contracts')&&!textVal(r.number,50))return fail('شماره سند الزامی است.');
+ try {const b=await req.json(),r=cleanup(e,b);if(!textVal(r.name||r.title,200))return fail('عنوان یا نام الزامی است.');if(e==='interactions'&&!r.contact_id)return fail('انتخاب مخاطب الزامی است.');if((e==='documents'||e==='contracts')&&!textVal(r.number,50))return fail('شماره سند الزامی است.');
  const result=await transaction(async c=>{
  if(!await validReferences(c,s.orgId,r))throw new Error('invalid-ref');
  const keys=Object.keys(r);const cols=['org_id',...keys];const values=[s.orgId,...Object.values(r)];const marks=cols.map((_,i)=>`$${i+1}`);

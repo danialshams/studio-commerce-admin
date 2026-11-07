@@ -3,11 +3,11 @@ import { getSession, type Session } from './auth';
 export type Role='owner'|'admin'|'sales'|'support'|'viewer';
 const readModules:Record<Role,string[]>={
  owner:['*'],admin:['*'],
- sales:['contacts','deals','tasks','documents','contracts','activities','automation_rules','tickets'],
- support:['contacts','tasks','tickets','activities'],viewer:['contacts','deals','tasks','documents','contracts','tickets','activities']
+ sales:['contacts','deals','tasks','documents','contracts','interactions','activities','automation_rules','tickets'],
+ support:['contacts','tasks','tickets','interactions','activities'],viewer:['contacts','deals','tasks','documents','contracts','interactions','tickets','activities']
 };
 const writeModules:Record<Role,string[]>={
- owner:['*'],admin:['*'],sales:['contacts','deals','tasks','documents','contracts','tickets'],
+ owner:['*'],admin:['*'],sales:['contacts','deals','tasks','documents','contracts','interactions','tickets'],
  support:['contacts','tasks','tickets'],viewer:[]
 };
 export function authorize(s:Session,entity:string,write=false){

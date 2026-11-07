@@ -57,3 +57,13 @@ CREATE TABLE IF NOT EXISTS reminder_runs (
  entity_id uuid NOT NULL, kind varchar(32) NOT NULL, run_date date NOT NULL,
  created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(org_id,entity_id,kind,run_date)
 );
+CREATE TABLE IF NOT EXISTS interactions (
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(), org_id uuid NOT NULL REFERENCES organizations(id),
+ contact_id uuid NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+ deal_id uuid REFERENCES deals(id) ON DELETE SET NULL,
+ title varchar(200) NOT NULL, kind varchar(30) NOT NULL DEFAULT 'call', direction varchar(20) NOT NULL DEFAULT 'outbound',
+ occurred_at timestamptz NOT NULL DEFAULT now(), notes text NOT NULL DEFAULT '',
+ created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS interactions_org_idx ON interactions(org_id,contact_id,occurred_at DESC);
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS score integer NOT NULL DEFAULT 0 CHECK(score BETWEEN 0 AND 100);

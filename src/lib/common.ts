@@ -6,4 +6,4 @@ export const isoDate=(v:unknown)=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.tes
 export const textVal=(v:unknown,max=255)=>String(v??'').trim().slice(0,max);
 export const moneyVal=(v:unknown)=>{const n=Number(v);return Number.isSafeInteger(n)&&n>=0&&n<=100000000000000?n:0};
 export const isUUID=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-export const actionText:Record<string,string>={contacts:'مخاطب',deals:'فرصت فروش',tasks:'وظیفه',documents:'سند مالی',contracts:'قرارداد',tickets:'تیکت',automation_rules:'قانون خودکار'};
+export const actionText:Record<string,string>={contacts:'مخاطب',interactions:'تعامل',deals:'فرصت فروش',tasks:'وظیفه',documents:'سند مالی',contracts:'قرارداد',tickets:'تیکت',automation_rules:'قانون خودکار'};
