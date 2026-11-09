@@ -42,3 +42,16 @@
 .showcase-badge{display:inline-flex;gap:8px;align-items:center;flex-shrink:0;background:#e7edff;color:#3158bb;border-radius:20px;padding:9px 13px;font-size:11px;font-weight:750}
 .notification-item:disabled{cursor:default;opacity:1}
 @media(max-width:700px){.showcase-ribbon{align-items:flex-start;flex-direction:column;padding:14px}.showcase-badge{font-size:10px}}
+
+/* Contextual, keyboard-accessible guidance across CRM modules. */
+.crm-context-help{border:1px solid #e1e8f1;background:#fff;border-radius:13px;margin:0 0 19px;overflow:hidden}
+.crm-context-help summary{display:flex;align-items:center;gap:9px;min-height:47px;padding:11px 15px;list-style:none;cursor:pointer;color:#3d5c91;font-size:12px;font-weight:700}
+.crm-context-help summary::-webkit-details-marker{display:none}
+.crm-context-help summary:focus-visible{outline:2px solid #4b76e5;outline-offset:-3px}
+.crm-context-help[open] summary{border-bottom:1px solid #edf0f7}
+.crm-help-subtitle{font-size:10px;font-weight:400;color:#7889a0;margin-inline-start:auto}
+.crm-help-content{padding:14px 17px 17px;color:#55657e;font-size:12px;line-height:2}
+.crm-help-content p{margin:0 0 7px;color:#33445f}
+.crm-help-content ul{margin:0;padding-inline-start:20px;display:grid;gap:3px}
+.crm-help-content li{padding-inline-start:3px}
+@media(max-width:650px){.crm-context-help summary{padding:12px}.crm-help-subtitle{display:none}.crm-help-content{padding:12px 14px;font-size:11px}}
